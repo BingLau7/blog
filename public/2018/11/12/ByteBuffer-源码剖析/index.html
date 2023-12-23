@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="要点:  JDK 原生支持，主要用于 NIO 包含两个实现 HeapByteBuffer: 基于 Java 堆实现 DirectByteBuffer: 使用 unsafe 的 API 进行堆外操作   核心方法为 put(byte) 与 get()。分别是往ByteBuffer里写一个字节，和读一个字节。 读写模式分离，正常的应用场景是：往ByteBuffer里写一些数据，然后 flip()，然后">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ByteBuffer 源码剖析">
+<meta property="og:url" content="http://example.com/2018/11/12/ByteBuffer-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="要点:  JDK 原生支持，主要用于 NIO 包含两个实现 HeapByteBuffer: 基于 Java 堆实现 DirectByteBuffer: 使用 unsafe 的 API 进行堆外操作   核心方法为 put(byte) 与 get()。分别是往ByteBuffer里写一个字节，和读一个字节。 读写模式分离，正常的应用场景是：往ByteBuffer里写一些数据，然后 flip()，然后">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-11-12T09:11:18.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.749Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="NIO">
+<meta property="article:tag" content="Netty源码剖析系列">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2018/11/12/ByteBuffer-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2018/11/12/ByteBuffer-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/","path":"2018/11/12/ByteBuffer-源码剖析/","title":"ByteBuffer 源码剖析"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>ByteBuffer 源码剖析 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Demo"><span class="nav-number">1.</span> <span class="nav-text">Demo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">主要工作原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#HeapByteBuffer-%E8%A7%A3%E6%9E%90"><span class="nav-number">3.1.</span> <span class="nav-text">HeapByteBuffer 解析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#init"><span class="nav-number">3.1.1.</span> <span class="nav-text">init</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#put"><span class="nav-number">3.1.2.</span> <span class="nav-text">put</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#get"><span class="nav-number">3.1.3.</span> <span class="nav-text">get</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MappedByteBuffer-%E8%A7%A3%E6%9E%90"><span class="nav-number">3.2.</span> <span class="nav-text">MappedByteBuffer 解析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DirectByteBuffer-%E8%A7%A3%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">DirectByteBuffer 解析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Cleaner-%E8%AF%A6%E8%A7%A3"><span class="nav-number">3.3.1.</span> <span class="nav-text">Cleaner 详解</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ByteBuffer-%E4%B8%8E-ByteBuf"><span class="nav-number">4.</span> <span class="nav-text">ByteBuffer 与 ByteBuf</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/11/12/ByteBuffer-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="ByteBuffer 源码剖析 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ByteBuffer 源码剖析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-12 17:11:18" itemprop="dateCreated datePublished" datetime="2018-11-12T17:11:18+08:00">2018-11-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">源码分析</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>要点:</p>
+<ol>
+<li>JDK 原生支持，主要用于 NIO</li>
+<li>包含两个实现<ol>
+<li>HeapByteBuffer: 基于 Java 堆实现</li>
+<li>DirectByteBuffer: 使用 unsafe 的 API 进行堆外操作</li>
+</ol>
+</li>
+<li>核心方法为 <code>put(byte)</code> 与 <code>get()</code>。分别是往ByteBuffer里写一个字节，和读一个字节。</li>
+<li>读写模式分离，正常的应用场景是：往ByteBuffer里写一些数据，然后 <code>flip()</code>，然后再读出来。</li>
+<li>在 JDK11 中 MappedByteBuffer 的创建实际是 DirectByteBuffer</li>
+<li>DirectByteBuffer 的垃圾回收利用了幻象引用进行回收，详见下面的 <code>Cleaner</code></li>
+</ol>
+<span id="more"></span>
+
+<h3 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">test</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// write</span></span><br><span class="line">    <span class="type">ByteBuffer</span> <span class="variable">buffer</span> <span class="operator">=</span> ByteBuffer.allocate(<span class="number">8</span>);</span><br><span class="line">    System.out.printf(<span class="string">&quot;before pos/cap/limit: %d, %d, %d\n&quot;</span>, buffer.position(), buffer.capacity(), buffer.limit());</span><br><span class="line">    <span class="comment">// before pos/cap/limit: 0, 8, 8</span></span><br><span class="line"></span><br><span class="line">    buffer.putShort((<span class="type">short</span>)<span class="number">20</span>);</span><br><span class="line">    buffer.put(<span class="string">&quot;test&quot;</span>.getBytes());</span><br><span class="line">    System.out.printf(<span class="string">&quot;write pos/cap/limit: %d, %d, %d\n&quot;</span>, buffer.position(), buffer.capacity(), buffer.limit());</span><br><span class="line">    <span class="comment">// write pos/cap/limit: 6, 8, 8</span></span><br><span class="line"></span><br><span class="line">    buffer.flip();</span><br><span class="line">    System.out.printf(<span class="string">&quot;flip pos/cap/limit: %d, %d, %d\n&quot;</span>, buffer.position(), buffer.capacity(), buffer.limit());</span><br><span class="line">    <span class="comment">// flip pos/cap/limit: 0, 8, 6</span></span><br><span class="line"></span><br><span class="line">    <span class="type">short</span> <span class="variable">num</span> <span class="operator">=</span> buffer.getShort();</span><br><span class="line">    System.out.printf(<span class="string">&quot;get short pos/cap/limit: %d, %d, %d\n&quot;</span>, buffer.position(), buffer.capacity(), buffer.limit());</span><br><span class="line">    <span class="comment">// get short pos/cap/limit: 2, 8, 6</span></span><br><span class="line">    <span class="type">byte</span>[] strArr = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">4</span>];</span><br><span class="line">    buffer.get(strArr, <span class="number">0</span>, <span class="number">4</span>);</span><br><span class="line">    System.out.printf(<span class="string">&quot;get array pos/cap/limit: %d, %d, %d\n&quot;</span>, buffer.position(), buffer.capacity(), buffer.limit());</span><br><span class="line">    <span class="comment">// get array pos/cap/limit: 6, 8, 6</span></span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">&quot;num: &quot;</span> + num + <span class="string">&quot; str: &quot;</span> + <span class="keyword">new</span> <span class="title class_">String</span>(strArr));</span><br><span class="line">    <span class="comment">// num: 20 str: test</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="主要工作原理"><a href="#主要工作原理" class="headerlink" title="主要工作原理"></a>主要工作原理</h3><p><strong>内部字段</strong></p>
+<ul>
+<li><code>byte[] hb</code>: 缓存数组</li>
+<li><code>position</code>: 当前操作位置</li>
+<li><code>capacity</code>: 初始化 Buffer 容量</li>
+<li><code>limit</code>: 读写的上限，limit &lt;&#x3D; capacity</li>
+<li><code>mark</code>: 为某一读过的位置做标记，便于某些时候回退到该位置。</li>
+</ul>
+<p>主要操作即操作这几个字段用于协同</p>
+<ol>
+<li><code>put/get</code> 将会增加 <code>position</code>，其操作也是从 <code>position</code> 开始</li>
+<li><code>put</code> 将会增加 <code>limit</code>，检测 <code>capacity</code></li>
+<li><code>get</code> 将会检测 <code>limit</code></li>
+<li><code>filp</code> 将会复位 <code>position</code> 一般用于读写转换</li>
+</ol>
+<h3 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h3><h4 id="HeapByteBuffer-解析"><a href="#HeapByteBuffer-解析" class="headerlink" title="HeapByteBuffer 解析"></a>HeapByteBuffer 解析</h4><h5 id="init"><a href="#init" class="headerlink" title="init"></a>init</h5><p>就 ByteBuffer 来看，<code>HeapByteBuffer</code> 中初始化链条<strong>第一环</strong>是 Buffer 的构造器，代码过于简单不进行说明，总体来说是初始化了 <code>capacity、limit、position、mark</code>。<br>这里大家会疑惑 <code>capacity</code> 可能通过 <code>allocate</code> 传递了，但其他的从哪儿来？  </p>
+<ol>
+<li>limit &#x3D; capacity</li>
+<li>mark &#x3D; -1 会在构造器中直接置为 0 </li>
+<li>position &#x3D; 0</li>
+</ol>
+<p><strong>第二环:</strong> ByteBuffer 的构造器会将 byte[] 初始化并设置 capacity，同时设置 offset &#x3D; 0.</p>
+<h5 id="put"><a href="#put" class="headerlink" title="put"></a>put</h5><p>核心函数：</p>
+<ul>
+<li><code>public ByteBuffer put(byte[] src, int offset, int length)</code>  </li>
+<li><code>public final Buffer position(int newPosition)</code></li>
+</ul>
+<p>要点:</p>
+<ol>
+<li><code>checkBounds</code> 是个有趣的函数，若其中（offset、length、src.length）任一一个值为负数则结果即超出，若 <code>(size - (off + len))</code> 为负则结果也为异常。其实现使用了 <code>|</code></li>
+<li>position 将会重新设置位置，这里面，若 mark 的值大于 postition 了 mark 会重置为 -1</li>
+<li>若对比 <code>ByteBuffer</code> 父类与 <code>HeapByteBuffer</code> 的实现来看会发现，<code>ByteBuffer</code> 使用 <code>put(byte)</code> 逐个工作而后者则借助了 <code>System.arrayCopy</code></li>
+</ol>
+<p>既然都看到这儿了，那我们就了解一下 <code>System.arrayCopy</code>，native 源码翻起来</p>
+<p>该代码位于 <code>src/share/native/lang/System.c</code> 中，主要通过 <code>Java_java_lang_System_registerNatives</code> 注册，其真实实现在 <code>src/share/vm/prims/jvm.cpp</code></p>
+<p>说实话，得补一下 C艹…</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">JVM_ENTRY</span>(<span class="type">void</span>, <span class="built_in">JVM_ArrayCopy</span>(JNIEnv *env, jclass ignored, jobject src, jint src_pos,</span><br><span class="line">                               jobject dst, jint dst_pos, jint length))</span><br><span class="line">  <span class="built_in">JVMWrapper</span>(<span class="string">&quot;JVM_ArrayCopy&quot;</span>);</span><br><span class="line">  <span class="comment">// Check if we have null pointers</span></span><br><span class="line">  <span class="keyword">if</span> (src == <span class="literal">NULL</span> || dst == <span class="literal">NULL</span>) &#123;</span><br><span class="line">    <span class="built_in">THROW</span>(vmSymbols::<span class="built_in">java_lang_NullPointerException</span>());</span><br><span class="line">  &#125;</span><br><span class="line">  arrayOop s = <span class="built_in">arrayOop</span>(JNIHandles::<span class="built_in">resolve_non_null</span>(src));</span><br><span class="line">  arrayOop d = <span class="built_in">arrayOop</span>(JNIHandles::<span class="built_in">resolve_non_null</span>(dst));</span><br><span class="line">  <span class="built_in">assert</span>(s-&gt;<span class="built_in">is_oop</span>(), <span class="string">&quot;JVM_ArrayCopy: src not an oop&quot;</span>);</span><br><span class="line">  <span class="built_in">assert</span>(d-&gt;<span class="built_in">is_oop</span>(), <span class="string">&quot;JVM_ArrayCopy: dst not an oop&quot;</span>);</span><br><span class="line">  <span class="comment">// Do copy</span></span><br><span class="line">  s-&gt;<span class="built_in">klass</span>()-&gt;<span class="built_in">copy_array</span>(s, src_pos, d, dst_pos, length, thread);</span><br><span class="line">JVM_END</span><br></pre></td></tr></table></figure>
+
+<p>可以看出，主要逻辑肯定是 <code>copy_array</code> 中（这里可能涉及到 <code>TypeArrayKlass（基础类型）/ObjArrayKlass</code>，我们看前者）</p>
+<p>核心逻辑： </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">...</span><br><span class="line"><span class="comment">// This is an attempt to make the copy_array fast.</span></span><br><span class="line"><span class="type">int</span> l2es = <span class="built_in">log2_element_size</span>();</span><br><span class="line"><span class="type">int</span> ihs = <span class="built_in">array_header_in_bytes</span>() / wordSize;</span><br><span class="line"><span class="type">char</span>* src = (<span class="type">char</span>*) ((oop*)s + ihs) + ((<span class="type">size_t</span>)src_pos &lt;&lt; l2es);</span><br><span class="line"><span class="type">char</span>* dst = (<span class="type">char</span>*) ((oop*)d + ihs) + ((<span class="type">size_t</span>)dst_pos &lt;&lt; l2es);</span><br><span class="line">Copy::<span class="built_in">conjoint_memory_atomic</span>(src, dst, (<span class="type">size_t</span>)length &lt;&lt; l2es);</span><br></pre></td></tr></table></figure>
+
+<p>最后会发现调用了平台相关的 <code>pd_conjoint_bytes</code>，看了看 linux 下面的实现居然都直接汇编了，卧槽… 追到这儿暂停吧，真看不懂了[捂脸]</p>
+<p>但到现在也差不多已知猜测是通过操作整块内存一起使用指针串联提高执行速度的。</p>
+<h5 id="get"><a href="#get" class="headerlink" title="get"></a>get</h5><p>get 流程与 put 几乎一致。即空数组作为 arrayCopy 的 dst，然后将 dst 作为结果返回。</p>
+<h4 id="MappedByteBuffer-解析"><a href="#MappedByteBuffer-解析" class="headerlink" title="MappedByteBuffer 解析"></a>MappedByteBuffer 解析</h4><p>由于 DirectByteBuffer 继承了 MappedByteBuffer 且个人对其机制比较感兴趣，所以先介绍一下 MappedByteBuffer。这儿有一篇文章可以参考一下: <a target="_blank" rel="noopener" href="https://www.jianshu.com/p/f90866dcbffc">深入浅出MappedByteBuffer</a>。文章要点:</p>
+<ol>
+<li>MappedByteBuffer 继承自 ByteBuffer，内部维护了一个逻辑地址 address。</li>
+<li>除了正常 READ&#x2F;WRITE 还支持 copy_on_write（MapMode.PRIVATE）</li>
+<li>解析了 MappedByteBuffer 的创建过程</li>
+</ol>
+<p>文中所包含的代码可以在 <a target="_blank" rel="noopener" href="https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/sun/nio/ch/FileChannelImpl.java">FileChannelImpl.java</a> 查看</p>
+<p>创建主要核心代码 <code>Utils.newMappedByteBuffer</code> 主要是创建了一个 <code>DirectByteBuffer</code> （失望了吧？）</p>
+<h4 id="DirectByteBuffer-解析"><a href="#DirectByteBuffer-解析" class="headerlink" title="DirectByteBuffer 解析"></a>DirectByteBuffer 解析</h4><p>即堆外内存。关于介绍这里有篇文章可以参考一下 <a target="_blank" rel="noopener" href="http://www.importnew.com/26334.html">堆外内存之 DirectByteBuffer 详解</a>。文章要点:</p>
+<ol>
+<li>DirectByteBuffer 该类本身还是位于Java内存模型的堆中。堆内内存是 JVM 可以直接管控、操纵。而 DirectByteBuffer 中的 <code>unsafe.allocateMemory(size);</code> 是个一个 native 方法，这个方法分配的是堆外内存，通过 C 的 malloc 来进行分配的。分配的内存是系统本地的内存，并不在 Java 的内存中，也不属于 JVM 管控范围。</li>
+<li>DirectByteBuffer 中的 <code>address</code> 表示分配的堆外内存地址。</li>
+<li>利用 PhantomReference 跟踪垃圾回收过程</li>
+<li>最后介绍了一些 DirectByteBuffer 使用的要点</li>
+</ol>
+<p>还有笨神的文章<a target="_blank" rel="noopener" href="http://lovestblog.cn/blog/2015/05/12/direct-buffer/">JVM源码分析之堆外内存完全解读</a>。文章要点:</p>
+<ol>
+<li>区分广义堆外内存（jvm 本身在运行过程中分配的内存，codecache，jni 里分配的内存，DirectByteBuffer 分配的内存等等），狭义堆外内存（DirectByteBuffer）</li>
+<li><code>Bits.reserveMemory</code> 用以分配内存</li>
+<li>默认堆外内存实际是在 java.lang.System 初始化时候通过 native 方法 <code>Runtime.getRuntime().maxMemory()</code> 设置的（若不设置 <code>-Dsun.nio.MaxDirectMemorySize</code>）。</li>
+<li><code>Bits.reserveMemory</code> 过程中主动触发了一次 <code>System.gc()</code> 。堆外内存不会对 gc 造成什么影响(这里的 System.gc 除外)，但是堆外内存的回收其实依赖于我们的 gc 机制，gc 能通过操作 DirectByteBuffer 对象来间接操作对应的堆外内存了。</li>
+<li>DirectByteBuffer 对象在创建的时候关联了一个 PhantomReference，其主要是用来跟踪对象何时被回收的，它不能影响 gc 决策，但是 gc 过程中如果发现某个对象除了只有 PhantomReference 引用它之外，并没有其他的地方引用它了，那将会把这个引用放到 java.lang.ref.Reference.pending 队列里，在 gc 完毕的时候通知 ReferenceHandler 这个守护线程去执行一些后置处理，而 DirectByteBuffer 关联的 PhantomReference 是 PhantomReference 的一个子类，在最终的处理里会通过 Unsafe 的 free 接口来释放 DirectByteBuffer 对应的堆外内存块。</li>
+<li>在通信阶段存在于 Heap 的内存最后都要 copy 一份到堆外，这样直接使用堆外更好</li>
+<li>堆外内存不会对 gc 造成影响，同时也不受 gc 影响</li>
+<li>对于需要频繁操作的内存，并且仅仅是临时存在一会的，都建议使用堆外内存，并且做成缓冲池，不断循环利用这块内存。</li>
+<li>堆外内存的回收不是被直接控制的，当然你可以通过别的一些途径，比如反射，直接使用 Unsafe 接口等，但是这些务必给你带来了一些烦恼。如果大面积使用迟早会发生内存泄露。</li>
+</ol>
+<p>两篇文章都讲得足够好了，就不赘述了。</p>
+<h5 id="Cleaner-详解"><a href="#Cleaner-详解" class="headerlink" title="Cleaner 详解"></a>Cleaner 详解</h5><p>先简单介绍一下 PhantomReference，所谓幻象引用。</p>
+<ol>
+<li>不能通过该引用去访问对象</li>
+<li>提供一种确保对象被 <code>finalize</code> 后做某些事的机制</li>
+<li>一般使用幻想应用模式：<ol>
+<li>指定一个 ReferenceQueue 作为引用队列</li>
+<li>当 finalize(非空实现)被触发时，JVM 会将对象推入引用队列中</li>
+</ol>
+</li>
+</ol>
+<p><strong>PhantomReference Demo</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PhantomReferenceTest</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ReferenceQueue</span> <span class="variable">rq</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ReferenceQueue</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        <span class="type">Object</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Object</span>();</span><br><span class="line">        <span class="type">PhantomReference</span> <span class="variable">pr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PhantomReference</span>(t, rq);</span><br><span class="line">        t = <span class="literal">null</span>;</span><br><span class="line">        System.gc();</span><br><span class="line">        System.out.println(<span class="string">&quot;finalize: &quot;</span> + (rq.remove(<span class="number">1000</span>) != <span class="literal">null</span>)); <span class="comment">// finalize: true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个符合预期，但是若对象实现了 <code>finalizer</code> 就比较有意思了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PhantomReferenceTest</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ReferenceQueue</span> <span class="variable">rq</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ReferenceQueue</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">TestDemo</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">finalize</span><span class="params">()</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;test&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        <span class="type">TestDemo</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TestDemo</span>();</span><br><span class="line">        <span class="type">PhantomReference</span> <span class="variable">pr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PhantomReference</span>(t, rq);</span><br><span class="line">        t = <span class="literal">null</span>;</span><br><span class="line">        System.gc();</span><br><span class="line">        Thread.sleep(<span class="number">100</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;finalize: &quot;</span> + (rq.remove(<span class="number">1000</span>) != <span class="literal">null</span>)); <span class="comment">// finalize: false</span></span><br><span class="line">        System.gc();</span><br><span class="line">        System.out.println(<span class="string">&quot;finalize: &quot;</span> + (rq.remove(<span class="number">1000</span>) != <span class="literal">null</span>)); <span class="comment">// finalize: true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以下引用以下 《深入理解 Java 虚拟机》 书中内容</p>
+<blockquote>
+<p>即使在可达性分析算法中不可达的对象，也并非是『非死不可』的，这时候它们暂时处于『缓刑』阶段，要真正宣告一个对象死亡，至少要经历两次标记过程：如果对象在进行可达性分析后发现没有与 GC Roots 相连接的引用链，那它将会被第一次标记并进行一次筛选，筛选的条件是此对象是否有必要执行 <code>finalize()</code> 方法。<strong>当对象没有覆盖 <code>finalizer()</code> 方法，或者 <code>finalizer()</code> 方法已经被虚拟机调用过，虚拟机将这两种情况都视为『没有必要执行』。</strong></p>
+</blockquote>
+<p>即上述之所以需要第二次 gc 才能触发引用队列的原因是对象在第一次时并未真正的死亡。</p>
+<p>接下来是 Cleaner 的源码，其核心即是 <code>public class Cleaner extends PhantomReference&lt;Object&gt;</code></p>
+<p>其中 <code>clean()</code> 方法是核心清理代码，这里是在 <code>java.lang.ref.Reference</code> 初始化时创建了一个 <code>ReferenceHandler</code> 的守护线程进行调用。</p>
+<p>而其调用的清理任务是来自于 DirectByteBuffer 的 Deallocator Runnable。主要记录了 <code>address</code> 内存地址信息，以及内存容量信息，然后使用 <code> unsafe.freeMemory(address)</code> 释放该内存地址，最后再调用 <code>Bits.unreserveMemory</code> 来清理内存计数。 </p>
+<p>关于 Cleaner 与 finalizer 最新的还有下面这些可以参考:</p>
+<p><a target="_blank" rel="noopener" href="https://bugs.openjdk.java.net/browse/JDK-8165641">Deprecate Object.finalize</a><br><a target="_blank" rel="noopener" href="https://bugs.openjdk.java.net/browse/JDK-8138696">java.lang.ref.Cleaner - an alternative to finalization</a><br><a target="_blank" rel="noopener" href="http://mail.openjdk.java.net/pipermail/core-libs-dev/2017-March/046650.html">RFR 9: 8165641 : Deprecate Object.finalize</a></p>
+<h3 id="ByteBuffer-与-ByteBuf"><a href="#ByteBuffer-与-ByteBuf" class="headerlink" title="ByteBuffer 与 ByteBuf"></a>ByteBuffer 与 ByteBuf</h3><p>Netty 中的 ByteBuf 是由于 ByteBuffer 在使用上的困难，以及一些在网络 IO 上的常用操作的缺失决定了其存在性。</p>
+<p>其特性参考 <a target="_blank" rel="noopener" href="https://netty.io/4.1/api/index.html">官方 API</a></p>
+<ol>
+<li>可自定义 buffer type</li>
+<li>composite buffer type 可以实现零拷贝</li>
+<li>动态长度 Buffer type</li>
+<li>不需要调用 filp() 在读写模式下转换</li>
+<li>通常比 ByteBuffer 快</li>
+</ol>
+<p>接下来的文章，我们将深入 ByteBuf 源码进行分析。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/NIO/" rel="tag"># NIO</a>
+              <a href="/tags/Netty%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90%E7%B3%BB%E5%88%97/" rel="tag"># Netty源码剖析系列</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/01/30/%E5%85%B3%E4%BA%8E-asyncio-%E7%9A%84%E5%96%83%E5%96%83%E8%87%AA%E8%AF%AD/" rel="prev" title="关于 asyncio 的喃喃自语">
+                  <i class="fa fa-angle-left"></i> 关于 asyncio 的喃喃自语
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/11/17/netty-UnpooledByteBuf-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" rel="next" title="Netty-UnpooledByteBuf 源码剖析">
+                  Netty-UnpooledByteBuf 源码剖析 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

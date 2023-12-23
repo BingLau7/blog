@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="首先我们看看 ab -h 命令提供的信息: 12345678910111213141516171819202122232425262728293031323334353637383940414243Usage: ab [options] [http[s]:&#x2F;&#x2F;]hostname[:port]&#x2F;pathOptions are:    -n requests     Number of request">
+<meta property="og:type" content="article">
+<meta property="og:title" content="apache 的 ab 工具简单介绍">
+<meta property="og:url" content="http://example.com/2015/11/13/apache-%E7%9A%84-ab-%E5%B7%A5%E5%85%B7%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="首先我们看看 ab -h 命令提供的信息: 12345678910111213141516171819202122232425262728293031323334353637383940414243Usage: ab [options] [http[s]:&#x2F;&#x2F;]hostname[:port]&#x2F;pathOptions are:    -n requests     Number of request">
+<meta property="og:locale">
+<meta property="article:published_time" content="2015-11-13T08:20:33.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.758Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="http">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2015/11/13/apache-%E7%9A%84-ab-%E5%B7%A5%E5%85%B7%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2015/11/13/apache-%E7%9A%84-ab-%E5%B7%A5%E5%85%B7%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/","path":"2015/11/13/apache-的-ab-工具简单介绍/","title":"apache 的 ab 工具简单介绍"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>apache 的 ab 工具简单介绍 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2015/11/13/apache-%E7%9A%84-ab-%E5%B7%A5%E5%85%B7%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="apache 的 ab 工具简单介绍 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          apache 的 ab 工具简单介绍
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2015-11-13 16:20:33" itemprop="dateCreated datePublished" datetime="2015-11-13T16:20:33+08:00">2015-11-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">工具</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>首先我们看看 <code>ab -h</code> 命令提供的信息:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">Usage: ab [options] [http[s]://]hostname[:port]/path</span><br><span class="line">Options are:</span><br><span class="line">    -n requests     Number of requests to perform # 请求数</span><br><span class="line">    -c concurrency  Number of multiple requests to make at a time # 并发请求数</span><br><span class="line">    -t timelimit    Seconds to max. to spend on benchmarking # 测试所进行的最大秒数。</span><br><span class="line">                    This implies -n 50000 # 其内部隐含值是-n 50000</span><br><span class="line">    -s timeout      Seconds to max. wait for each response # 响应等待超时时间</span><br><span class="line">                    Default is 30 seconds # 默认是 30 秒</span><br><span class="line">    -b windowsize   Size of TCP send/receive buffer, in bytes # TCP窗口大小</span><br><span class="line">    -B address      Address to bind to when making outgoing connections # 代理地址？</span><br><span class="line">    -p postfile     File containing data to POST. Remember also to set -T # post请求包含的文件，也可以使用 -T</span><br><span class="line">    -u putfile      File containing data to PUT. Remember also to set -T # put求包含的文件，也可以使用 -T</span><br><span class="line">    -T content-type Content-type header to use for POST/PUT data, eg. # post / put 请求时候 content-type 请求头</span><br><span class="line">                    &#x27;application/x-www-form-urlencoded&#x27;</span><br><span class="line">                    Default is &#x27;text/plain&#x27;</span><br><span class="line">    -v verbosity    How much troubleshooting info to print # 是否需要打印故障日志</span><br><span class="line">    -w              Print out results in HTML tables # 以HTML表的格式输出结果</span><br><span class="line">    -i              Use HEAD instead of GET # 使用 HEAD 方法代替 GET 方法</span><br><span class="line">    -x attributes   String to insert as table attributes # 设置&lt;table&gt;属性的字符串。</span><br><span class="line">    -y attributes   String to insert as tr attributes # 设置&lt;tr&gt;属性的字符串。</span><br><span class="line">    -z attributes   String to insert as td or th attributes # 设置&lt;td&gt;属性的字符串。</span><br><span class="line">    -C attribute    Add cookie, eg. &#x27;Apache=1234&#x27;. (repeatable) # 对请求附加一个Cookie:行。其典型形式是name=value的一个参数对，此参数可以重复。</span><br><span class="line">    -H attribute    Add Arbitrary header line, eg. &#x27;Accept-Encoding: gzip&#x27; #对请求附加额外的头信息。此参数的典型形式是一个有效的头信息行，其中包含了以冒号分隔的字段和值的对(如,&quot;Accept-Encoding:zip/zop;8bit&quot;)。</span><br><span class="line">                    Inserted after all normal header lines. (repeatable)</span><br><span class="line">    -A attribute    Add Basic WWW Authentication, the attributes # 对服务器提供BASIC认证信任。</span><br><span class="line">                    are a colon separated username and password.</span><br><span class="line">    -P attribute    Add Basic Proxy Authentication, the attributes # 对一个中转代理提供BASIC认证信任。</span><br><span class="line">                    are a colon separated username and password.</span><br><span class="line">    -X proxy:port   Proxyserver and port number to use # 对请求使用代理服务器。</span><br><span class="line">    -V              Print version number and exit # 显示版本号</span><br><span class="line">    -k              Use HTTP KeepAlive feature # 启用HTTP KeepAlive功能，即在一个HTTP会话中执行多个请求。默认时，不启用KeepAlive功能。</span><br><span class="line">    -d              Do not show percentiles served table. # 不显示&quot;percentage served within XX [ms] table&quot;的消息(为以前的版本提供支持)。</span><br><span class="line">    -S              Do not show confidence estimators and warnings. # 不显示估计配置与警告</span><br><span class="line">    -q              Do not show progress when doing more than 150 requests # 如果处理的请求数大于150，ab每处理大约10%或者100个请求时，会在stderr输出一个进度计数。此-q标记可以抑制这些信息。</span><br><span class="line">    -l              Accept variable document length (use this for dynamic pages) # 接受可变长度的文档</span><br><span class="line">    -g filename     Output collected data to gnuplot format file. # 通过 gnuplot 文件格式收集输出数据</span><br><span class="line">    -e filename     Output CSV file with percentages served # 产生一个以逗号分隔的(CSV)文件，其中包含了处理每个相应百分比的请求所需要(从1%到100%)的相应百分比的(以微妙为单位)时间。由于这种格式已经“二进制化”，所以比&#x27;gnuplot&#x27;格式更有用。</span><br><span class="line">    -r              Don&#x27;t exit on socket receive errors. # 当 socket 返回错误时不退出</span><br><span class="line">    -m method       Method name # 请求方法名称</span><br><span class="line">    -h              Display usage information (this message) # 显示帮助信息</span><br><span class="line">    -Z ciphersuite  Specify SSL/TLS cipher suite (See openssl ciphers) # 指定 SSL/TLS 加密方式</span><br><span class="line">    -f protocol     Specify SSL/TLS protocol # 指定 SSL/TLS 协议</span><br><span class="line">                    (SSL3, TLS1, TLS1.1, TLS1.2 or ALL)</span><br></pre></td></tr></table></figure>
+
+<p>接下来我们使用 <code>http://www.douban.com/</code> 作为测试网站</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ ab -n 100 -c 100 http://www.douban.com/</span><br><span class="line">This is ApacheBench, Version 2.3 &lt;$Revision: 1604373 $&gt;</span><br><span class="line">Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/</span><br><span class="line">Licensed to The Apache Software Foundation, http://www.apache.org/</span><br><span class="line"></span><br><span class="line">Benchmarking www.douban.com (be patient).....done</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Server Software:        dae                         # 测试服务器软件名称</span><br><span class="line">Server Hostname:        www.douban.com               # 测试网址Host</span><br><span class="line">Server Port:            80                          # 测试端口</span><br><span class="line"></span><br><span class="line">Document Path:          /                           # 测试Path</span><br><span class="line">Document Length:        160 bytes                    # 返回的报文大小</span><br><span class="line"></span><br><span class="line">Concurrency Level:      100                         # 标识并发的用户数</span><br><span class="line">Time taken for tests:   0.284 seconds                # 执行完所有的请求所花费的时间</span><br><span class="line">Complete requests:      100                         # 完成请求数</span><br><span class="line">Failed requests:        0                           # 失败请求数</span><br><span class="line">Non-2xx responses:      100                         # 返回响应非2xx数</span><br><span class="line">Total transferred:      30100 bytes                  # 整个过程中的网络传输量</span><br><span class="line">HTML transferred:       16000 bytes                  # 整个过程中的HTML大小</span><br><span class="line">Requests per second:    352.02 [#/sec] (mean)         # 吞吐率,表示每秒处理的请求数，mean标识平均值</span><br><span class="line">Time per request:       284.075 [ms] (mean)           # 每个用户等待时间，mean标识平均值</span><br><span class="line">Time per request:       2.841 [ms] (mean, across all concurrent requests) #服务器平均请求处理的时间. </span><br><span class="line">Transfer rate:          103.47 [Kbytes/sec] received   # 这些请求在单位内,从服务器获取的数据长度.</span><br><span class="line"></span><br><span class="line">Connection Times (ms)                               # 网络上消耗的时间的分解</span><br><span class="line">              min  mean[+/-sd] median   max</span><br><span class="line">Connect:       26   37   7.9     35      63</span><br><span class="line">Processing:    44  130  76.7     88     239</span><br><span class="line">Waiting:       44  129  76.5     88     239</span><br><span class="line">Total:         70  167  77.5    133     277</span><br><span class="line"></span><br><span class="line">Percentage of the requests served within a certain time (ms) # 整个场景中所有请求的响应情况。</span><br><span class="line"><span class="meta prompt_">  50% </span><span class="language-bash">   133</span></span><br><span class="line"><span class="meta prompt_">  66% </span><span class="language-bash">   240</span></span><br><span class="line"><span class="meta prompt_">  75% </span><span class="language-bash">   271</span></span><br><span class="line"><span class="meta prompt_">  80% </span><span class="language-bash">   272</span></span><br><span class="line"><span class="meta prompt_">  90% </span><span class="language-bash">   275</span></span><br><span class="line"><span class="meta prompt_">  95% </span><span class="language-bash">   277</span></span><br><span class="line"><span class="meta prompt_">  98% </span><span class="language-bash">   277</span></span><br><span class="line"><span class="meta prompt_">  99% </span><span class="language-bash">   277</span></span><br><span class="line"><span class="meta prompt_"> 100% </span><span class="language-bash">   277 (longest request)</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/http/" rel="tag"># http</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2015/11/09/Tornado%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%E4%B9%8B%E5%90%8E/" rel="prev" title="Tornado源码阅读之后">
+                  <i class="fa fa-angle-left"></i> Tornado源码阅读之后
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2015/12/19/csrf-xsrf-%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E5%AF%B9%E7%AD%96%E7%95%A5/" rel="next" title="csrf(xsrf)原理与应对策略">
+                  csrf(xsrf)原理与应对策略 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

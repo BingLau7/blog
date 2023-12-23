@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="要点 UnpooledByteBufAllocator 的 Heap 与 Direct 的实现 Heap 内部实现使用了 byte[] Direct 内部依托于 PlatformDependent0 的各种 native 方法 toLeakAwareBuffer 部分主要讨论了 Netty 是如何应对内存泄露，以及检测内存泄露跟踪的四个级别是如何实现的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty-UnpooledByteBuf 源码剖析">
+<meta property="og:url" content="http://example.com/2018/11/17/netty-UnpooledByteBuf-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="要点 UnpooledByteBufAllocator 的 Heap 与 Direct 的实现 Heap 内部实现使用了 byte[] Direct 内部依托于 PlatformDependent0 的各种 native 方法 toLeakAwareBuffer 部分主要讨论了 Netty 是如何应对内存泄露，以及检测内存泄露跟踪的四个级别是如何实现的">
+<meta property="og:locale">
+<meta property="og:image" content="evernotecid://030B6737-EB59-4FA5-B258-B85DAAD049D0/appyinxiangcom/7066058/ENResource/p7345">
+<meta property="article:published_time" content="2018-11-17T10:13:28.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.758Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="NIO">
+<meta property="article:tag" content="Netty源码分析系列">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="evernotecid://030B6737-EB59-4FA5-B258-B85DAAD049D0/appyinxiangcom/7066058/ENResource/p7345">
+
+
+<link rel="canonical" href="http://example.com/2018/11/17/netty-UnpooledByteBuf-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2018/11/17/netty-UnpooledByteBuf-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/","path":"2018/11/17/netty-UnpooledByteBuf-源码剖析/","title":"Netty-UnpooledByteBuf 源码剖析"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Netty-UnpooledByteBuf 源码剖析 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A6%81%E7%82%B9"><span class="nav-number">1.</span> <span class="nav-text">要点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UnpooledByteBufAllocator-%E7%9A%84-Heap-%E9%83%A8%E5%88%86%E8%A7%A3%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">UnpooledByteBufAllocator 的 Heap 部分解析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%99%A8%E8%AF%B4%E6%98%8E"><span class="nav-number">2.1.</span> <span class="nav-text">构造器说明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#buffer-%E4%B8%BB%E8%A6%81%E9%80%BB%E8%BE%91"><span class="nav-number">2.2.</span> <span class="nav-text">buffer() 主要逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#writeByte-%E9%80%BB%E8%BE%91"><span class="nav-number">2.3.</span> <span class="nav-text">writeByte 逻辑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UnpooledByteBufAllocator-%E7%9A%84-Direct-%E9%83%A8%E5%88%86%E8%A7%A3%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">UnpooledByteBufAllocator 的 Direct 部分解析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Unsafe-%E7%9A%84-allocateDirect-%E7%BB%84%E6%AF%94%E8%BE%83"><span class="nav-number">3.1.</span> <span class="nav-text">Unsafe 的 allocateDirect 组比较</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Unsafe-%E7%9A%84-freeDirect-%E7%BB%84%E6%AF%94%E8%BE%83"><span class="nav-number">3.1.1.</span> <span class="nav-text">Unsafe 的 freeDirect 组比较</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#toLeakAwareBuffer"><span class="nav-number">4.</span> <span class="nav-text">toLeakAwareBuffer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ResourceLeakDetector-%E4%BB%8B%E7%BB%8D"><span class="nav-number">4.1.</span> <span class="nav-text">ResourceLeakDetector 介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#track"><span class="nav-number">4.1.1.</span> <span class="nav-text">track()</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/11/17/netty-UnpooledByteBuf-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Netty-UnpooledByteBuf 源码剖析 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Netty-UnpooledByteBuf 源码剖析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-17 18:13:28" itemprop="dateCreated datePublished" datetime="2018-11-17T18:13:28+08:00">2018-11-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">源码分析</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="要点"><a href="#要点" class="headerlink" title="要点"></a>要点</h3><ol>
+<li>UnpooledByteBufAllocator 的 Heap 与 Direct 的实现</li>
+<li>Heap 内部实现使用了 byte[]</li>
+<li>Direct 内部依托于 <code>PlatformDependent0</code> 的各种 native 方法</li>
+<li>toLeakAwareBuffer 部分主要讨论了 Netty 是如何应对内存泄露，以及检测内存泄露跟踪的四个级别是如何实现的</li>
+</ol>
+<span id="more"></span>
+
+<p><strong>Demo</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ByteBuf</span> <span class="variable">buf</span> <span class="operator">=</span> Unpooled.buffer();</span><br><span class="line">buf.writeBytes(<span class="string">&quot;test&quot;</span>.getBytes());</span><br><span class="line"></span><br><span class="line"><span class="type">byte</span>[] readBytes = <span class="keyword">new</span> <span class="title class_">byte</span>[buf.readableBytes()];</span><br><span class="line">buf.readBytes(readBytes);</span><br><span class="line">System.out.println(<span class="string">&quot;read content: &quot;</span> + <span class="keyword">new</span> <span class="title class_">String</span>(readBytes));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>入口 <code>Unpooled.buffer</code></p>
+</blockquote>
+<h3 id="UnpooledByteBufAllocator-的-Heap-部分解析"><a href="#UnpooledByteBufAllocator-的-Heap-部分解析" class="headerlink" title="UnpooledByteBufAllocator 的 Heap 部分解析"></a>UnpooledByteBufAllocator 的 Heap 部分解析</h3><h4 id="构造器说明"><a href="#构造器说明" class="headerlink" title="构造器说明"></a>构造器说明</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">UnpooledByteBufAllocator</span><span class="params">(<span class="type">boolean</span> preferDirect, <span class="type">boolean</span> disableLeakDetector, <span class="type">boolean</span> tryNoCleaner)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(preferDirect);</span><br><span class="line">    <span class="built_in">this</span>.disableLeakDetector = disableLeakDetector;</span><br><span class="line">    noCleaner = tryNoCleaner &amp;&amp; PlatformDependent.hasUnsafe()</span><br><span class="line">            &amp;&amp; PlatformDependent.hasDirectBufferNoCleanerConstructor();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>preferDirect 设置为 true 时, allocator.buffer 会先尝试分配 direct buffer 而非 heap buffer （如果能分配 direct buffer）</li>
+<li>disableLeakDetector 设置为 true 则表示该 allocator 将关闭 leak-detection. 这个用处在于用户仅想依靠 gc 来管理 direct buffer 而不希望显式释放内存。</li>
+<li>tryNoCleaner 设置为 true 则表示我们将尝试去使用 PlatformDependent.allocateDirectNoCleaner(int) 去分配 direct buffer（如果其他条件允许）</li>
+</ol>
+<h4 id="buffer-主要逻辑"><a href="#buffer-主要逻辑" class="headerlink" title="buffer() 主要逻辑"></a>buffer() 主要逻辑</h4><p>由方法追踪，跟踪 heapBuffer 的逻辑则我们能找到稍微内容多一些的方法即下面的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> ByteBuf <span class="title function_">heapBuffer</span><span class="params">(<span class="type">int</span> initialCapacity, <span class="type">int</span> maxCapacity)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (initialCapacity == <span class="number">0</span> &amp;&amp; maxCapacity == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> emptyBuf;</span><br><span class="line">    &#125;</span><br><span class="line">    validate(initialCapacity, maxCapacity); <span class="comment">// 验证 initialCapacity 的合法性</span></span><br><span class="line">    <span class="keyword">return</span> newHeapBuffer(initialCapacity, maxCapacity); <span class="comment">// core code</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>顺便一说，heapBuffer 其默认值（即我们之间调用 <code>buffer()</code> 结果）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">DEFAULT_INITIAL_CAPACITY</span> <span class="operator">=</span> <span class="number">256</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">DEFAULT_MAX_CAPACITY</span> <span class="operator">=</span> Integer.MAX_VALUE;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> ByteBuf <span class="title function_">newHeapBuffer</span><span class="params">(<span class="type">int</span> initialCapacity, <span class="type">int</span> maxCapacity)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> PlatformDependent.hasUnsafe() ? <span class="comment">// 判断一下是否能使用 unsafe</span></span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">InstrumentedUnpooledUnsafeHeapByteBuf</span>(<span class="built_in">this</span>, initialCapacity, maxCapacity) :</span><br><span class="line">            <span class="keyword">new</span> <span class="title class_">InstrumentedUnpooledHeapByteBuf</span>(<span class="built_in">this</span>, initialCapacity, maxCapacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果可以使用 unsafe</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">InstrumentedUnpooledUnsafeHeapByteBuf</span> <span class="keyword">extends</span> <span class="title class_">UnpooledUnsafeHeapByteBuf</span> &#123;</span><br><span class="line">    InstrumentedUnpooledUnsafeHeapByteBuf(UnpooledByteBufAllocator alloc, <span class="type">int</span> initialCapacity, <span class="type">int</span> maxCapacity) &#123;</span><br><span class="line">        <span class="built_in">super</span>(alloc, initialCapacity, maxCapacity);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>构造器追踪到 <code>UnpooledHeapByteBuf</code> 时候会发现一段这样的代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">UnpooledHeapByteBuf</span><span class="params">(ByteBufAllocator alloc, <span class="type">int</span> initialCapacity, <span class="type">int</span> maxCapacity)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(maxCapacity); <span class="comment">// 设置 maxCapacity 值</span></span><br><span class="line"></span><br><span class="line">    checkNotNull(alloc, <span class="string">&quot;alloc&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (initialCapacity &gt; maxCapacity) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(String.format(</span><br><span class="line">                <span class="string">&quot;initialCapacity(%d) &gt; maxCapacity(%d)&quot;</span>, initialCapacity, maxCapacity));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.alloc = alloc;</span><br><span class="line">    setArray(allocateArray(initialCapacity)); <span class="comment">// 单纯 setArray 逻辑即是将参数中的数组设置为 ByteBuf 的数组变量</span></span><br><span class="line">    setIndex(<span class="number">0</span>, <span class="number">0</span>); <span class="comment">// 设置 readIndex 与 writeIndex 均为 0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这么一看其核心逻辑就在 allocateArray() 方法，而且可以确定的是 <code>InstrumentedUnpooledUnsafeHeapByteBuf</code> 与 <code>InstrumentedUnpooledHeapByteBuf</code> 的区别也仅在 <strong>分配(allocateArray)</strong> 与 <strong>释放(freeArray)</strong> 方法上，但是当你仔细看着两个类的代码时你会发现，他们的核心在于 <code>UnpooledUnsafeHeapByteBuf</code> 与  <code>UnpooledHeapByteBuf</code> 的 <code>allocateArray</code> 与 <code>freeArray</code> 中，这二者余下操作是针对具体 ByteBuf 内部字段的调整&#x2F;监控.</p>
+<p><code>UnpooledHeapByteBuf</code> 过于简单，就是初始化一个数组而已 <code>new byte[]</code> 就不做介绍了，让我们主要来看看 <code>UnpooledUnsafeHeapByteBuf</code> 内部调用的 <code>PlatformDependent.allocateUninitializedArray(initialCapacity)</code>。</p>
+<p>这个方法内部逻辑是</p>
+<ol>
+<li>判断分配大小是否超过 <code>UNINITIALIZED_ARRAY_ALLOCATION_THRESHOLD</code> （默认 1024，可设置，对于 java9 之前或者是 java9 不给开 Unsafe 而言这个值就是 -1）</li>
+<li>若分配 size 大小小于 <code>UNINITIALIZED_ARRAY_ALLOCATION_THRESHOLD</code> 则直接创建数组了事（new byte[]）（即<strong>对 java9 之前及不支持 Unsafe 而言，都是创建数组</strong>）</li>
+<li>若分配 size 太大，则调用 <code> PlatformDependent0.allocateUninitializedArray(size)</code></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="type">byte</span>[] allocateUninitializedArray(<span class="type">int</span> size) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="type">byte</span>[]) ALLOCATE_ARRAY_METHOD.invoke(INTERNAL_UNSAFE, <span class="type">byte</span>.class, size);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IllegalAccessException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">Error</span>(e);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InvocationTargetException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">Error</span>(e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ALLOCATE_ARRAY_METHOD 是针对 Java9+ 的 <code>jdk.internal.misc.Unsafe.allocateUninitializedArray</code> 创建 Method, 从名称来看应该是使用了底层系统调用创建了一个未初始化的数组，一个针对性能的优化。其代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Allocates an array of a given type, but does not do zeroing.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * This method should only be used in the very rare cases where a high-performance code</span></span><br><span class="line"><span class="comment"> * overwrites the destination array completely, and compilers cannot assist in zeroing elimination.</span></span><br><span class="line"><span class="comment"> * In an overwhelming majority of cases, a normal Java allocation should be used instead.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * Users of this method are &lt;b&gt;required&lt;/b&gt; to overwrite the initial (garbage) array contents</span></span><br><span class="line"><span class="comment"> * before allowing untrusted code, or code in other threads, to observe the reference</span></span><br><span class="line"><span class="comment"> * to the newly allocated array. In addition, the publication of the array reference must be</span></span><br><span class="line"><span class="comment"> * safe according to the Java Memory Model requirements.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * The safest approach to deal with an uninitialized array is to keep the reference to it in local</span></span><br><span class="line"><span class="comment"> * variable at least until the initialization is complete, and then publish it &lt;b&gt;once&lt;/b&gt;, either</span></span><br><span class="line"><span class="comment"> * by writing it to a &lt;em&gt;volatile&lt;/em&gt; field, or storing it into a &lt;em&gt;final&lt;/em&gt; field in constructor,</span></span><br><span class="line"><span class="comment"> * or issuing a &#123;<span class="doctag">@link</span> #storeFence&#125; before publishing the reference.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@implnote</span> This method can only allocate primitive arrays, to avoid garbage reference</span></span><br><span class="line"><span class="comment"> * elements that could break heap integrity.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> componentType array component type to allocate</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> length array size to allocate</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> IllegalArgumentException if component type is null, or not a primitive class;</span></span><br><span class="line"><span class="comment"> *                                  or the length is negative</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">allocateUninitializedArray</span><span class="params">(Class&lt;?&gt; componentType, <span class="type">int</span> length)</span> &#123;</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="literal">null</span>) &#123;</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Component type is null&quot;</span>);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">if</span> (!componentType.isPrimitive()) &#123;</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Component type is not primitive&quot;</span>);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">if</span> (length &lt; <span class="number">0</span>) &#123;</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Negative length&quot;</span>);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> allocateUninitializedArray0(componentType, length);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@HotSpotIntrinsicCandidate</span></span><br><span class="line"><span class="keyword">private</span> Object <span class="title function_">allocateUninitializedArray0</span><span class="params">(Class&lt;?&gt; componentType, <span class="type">int</span> length)</span> &#123;</span><br><span class="line">   <span class="comment">// These fallbacks provide zeroed arrays, but intrinsic is not required to</span></span><br><span class="line">   <span class="comment">// return the zeroed arrays.</span></span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">byte</span>.class)    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">byte</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">boolean</span>.class) <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">boolean</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">short</span>.class)   <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">short</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">char</span>.class)    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">char</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">int</span>.class)     <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">int</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">float</span>.class)   <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">float</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">long</span>.class)    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">long</span>[length];</span><br><span class="line">   <span class="keyword">if</span> (componentType == <span class="type">double</span>.class)  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">double</span>[length];</span><br><span class="line">   <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看了这儿我也不太能理解为什么会绕弯选择这个优化[捂脸]，可能是期望一个性能优化的承诺？</p>
+<p>就前面的理解可知，我们此时获取到的 buffer 通常是 <code>InstrumentedUnpooledUnsafeHeapByteBuf extends UnpooledUnsafeHeapByteBuf</code> &#x2F;<code>InstrumentedUnpooledHeapByteBuf extends UnpooledHeapByteBuf</code>。而 <code>UnpooledUnsafeHeapByteBuf extends UnpooledHeapByteBuf</code>，所以接下来我们解析的顺序先从 <code>UnpooledHeapByteBuf</code> 开始，然后再看 <code>UnpooledUnsafeHeapByteBuf</code> 有什么不一样的地方.</p>
+<h4 id="writeByte-逻辑"><a href="#writeByte-逻辑" class="headerlink" title="writeByte 逻辑"></a>writeByte 逻辑</h4><p>在 <code>AbstractByteBuf</code> 中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> ByteBuf <span class="title function_">writeBytes</span><span class="params">(<span class="type">byte</span>[] src, <span class="type">int</span> srcIndex, <span class="type">int</span> length)</span> &#123;</span><br><span class="line">    ensureWritable(length); <span class="comment">// 这里就是自动调节长度的位置了</span></span><br><span class="line">    setBytes(writerIndex, src, srcIndex, length); <span class="comment">// 被 UnpooledHeapByteBuf 重载</span></span><br><span class="line">    writerIndex += length; <span class="comment">// 增加 writerIndex 索引值</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ensureWriteable0</code> &#x2F;&#x2F; 核心逻辑</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">ensureWritable0</span><span class="params">(<span class="type">int</span> minWritableBytes)</span> &#123;</span><br><span class="line">    ensureAccessible(); <span class="comment">// 明确是否可访问</span></span><br><span class="line">    <span class="keyword">if</span> (minWritableBytes &lt;= writableBytes()) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (checkBounds) &#123; <span class="comment">// 用户 jvm 配置是否需要 check bound，默认为 true</span></span><br><span class="line">        <span class="keyword">if</span> (minWritableBytes &gt; maxCapacity - writerIndex) &#123; <span class="comment">// maxCapacity 前文提过默认 int 上限</span></span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IndexOutOfBoundsException</span>(String.format(</span><br><span class="line">                    <span class="string">&quot;writerIndex(%d) + minWritableBytes(%d) exceeds maxCapacity(%d): %s&quot;</span>,</span><br><span class="line">                    writerIndex, minWritableBytes, maxCapacity, <span class="built_in">this</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Normalize the current capacity to the power of 2.</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">newCapacity</span> <span class="operator">=</span> alloc().calculateNewCapacity(writerIndex + minWritableBytes, maxCapacity);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Adjust to the new capacity.</span></span><br><span class="line">    capacity(newCapacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>set minNewCapacity &#x3D; writerIndex + minWritableBytes;</p>
+</blockquote>
+<p>calculateNewCapacity 增加的逻辑有点意思，它在预设值 <code>threshold = 4M</code> 的场景下 ，有这几种情况:</p>
+<ol>
+<li>minWritableBytes &#x3D;&#x3D; threshold 则直接返回 threshold</li>
+<li>minWritableBytes &gt; threshold 则  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (minNewCapacity &gt; threshold) &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">newCapacity</span> <span class="operator">=</span> minNewCapacity / threshold * threshold; <span class="comment">// threshold 倍数级增加（向下取整）</span></span><br><span class="line">    <span class="keyword">if</span> (newCapacity &gt; maxCapacity - threshold) &#123; <span class="comment">// 如果是最后一个 threshold 则将最大值空间分配返回</span></span><br><span class="line">        newCapacity = maxCapacity;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        newCapacity += threshold; <span class="comment">// 否则增加一个 4M 即可</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> newCapacity;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>最后一种情况即 minWritableBytes 小于 threshold，此时  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Not over threshold. Double up to 4 MiB, starting from 64.</span></span><br><span class="line"><span class="type">int</span> <span class="variable">newCapacity</span> <span class="operator">=</span> <span class="number">64</span>; <span class="comment">// 从 64 开始 double 直到大于 minNewCapacity</span></span><br><span class="line"><span class="keyword">while</span> (newCapacity &lt; minNewCapacity) &#123;</span><br><span class="line">    newCapacity &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> Math.min(newCapacity, maxCapacity); <span class="comment">// 如果 maxCapacity &lt; threshold 这儿就有用了</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>接下来我们看看被重载的 <code>setBytes</code> 方法（其实 <code>UnpooledHeapByteBuf</code> 与 <code>UnpooledUnsafeHeapByteBuf</code> 差异点也在这里）</p>
+<p><code>UnpooledHeapByteBuf</code> 非常简单，copy 一把跑路</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> ByteBuf <span class="title function_">setBytes</span><span class="params">(<span class="type">int</span> index, <span class="type">byte</span>[] src, <span class="type">int</span> srcIndex, <span class="type">int</span> length)</span> &#123;</span><br><span class="line">    checkSrcIndex(index, length, srcIndex, src.length);</span><br><span class="line">    System.arraycopy(src, srcIndex, array, index, length);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>UnpooledUnsafeHeapByteBuf</code> 的就需要稍微深入一下了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> ByteBuf <span class="title function_">setByte</span><span class="params">(<span class="type">int</span> index, <span class="type">int</span> value)</span> &#123;</span><br><span class="line">    checkIndex(index);</span><br><span class="line">    _setByte(index, value);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">_setByte</span><span class="params">(<span class="type">int</span> index, <span class="type">int</span> value)</span> &#123;</span><br><span class="line">    UnsafeByteBufUtil.setByte(array, index, value);</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="comment">// 最后起作用的，此时 data 及是 array 即原 buffer 的存储数组，第二个参数是其插入值的 index，value 是需要插入的值</span></span><br><span class="line">UNSAFE.putByte(data, BYTE_ARRAY_BASE_OFFSET + index, value);</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="UnpooledByteBufAllocator-的-Direct-部分解析"><a href="#UnpooledByteBufAllocator-的-Direct-部分解析" class="headerlink" title="UnpooledByteBufAllocator 的 Direct 部分解析"></a>UnpooledByteBufAllocator 的 Direct 部分解析</h3><p>我们经过上面的铺垫，通过 <code>directBuffer()</code> 方法可以直接追踪到 <code>UnpooledByteBufAllocator.newDirectBuffer()</code> 方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> ByteBuf <span class="title function_">newDirectBuffer</span><span class="params">(<span class="type">int</span> initialCapacity, <span class="type">int</span> maxCapacity)</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> ByteBuf buf;</span><br><span class="line">    <span class="keyword">if</span> (PlatformDependent.hasUnsafe()) &#123;</span><br><span class="line">        buf = noCleaner ? <span class="keyword">new</span> <span class="title class_">InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf</span>(<span class="built_in">this</span>, initialCapacity, maxCapacity) :</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">InstrumentedUnpooledUnsafeDirectByteBuf</span>(<span class="built_in">this</span>, initialCapacity, maxCapacity);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        buf = <span class="keyword">new</span> <span class="title class_">InstrumentedUnpooledDirectByteBuf</span>(<span class="built_in">this</span>, initialCapacity, maxCapacity);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> disableLeakDetector ? buf : toLeakAwareBuffer(buf);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在此之前我们需要回忆一下 noCleaner 与 disableLeakDetector 两个参数</p>
+<blockquote>
+<p>disableLeakDetector 设置为 true 则表示该 allocator 将关闭 leak-detection. 这个用处在于用户仅想依靠 gc 来管理 direct buffer 而不希望显式释放内存。 </p>
+<p>tryNoCleaner 设置为 true 则表示我们将尝试去使用 PlatformDependent.allocateDirectNoCleaner(int) 去分配 direct buffer（如果其他条件允许）</p>
+<p>noCleaner &#x3D; tryNoCleaner &amp;&amp; PlatformDependent.hasUnsafe() &amp;&amp; PlatformDependent.hasDirectBufferNoCleanerConstructor();</p>
+</blockquote>
+<p>看来接下来需要介绍</p>
+<ol>
+<li>InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf、InstrumentedUnpooledUnsafeDirectByteBuf、 InstrumentedUnpooledDirectByteBuf 之间的异同</li>
+<li>toLeakAwareBuffer(buf) 的用途</li>
+</ol>
+<p>先说三个 ByteBuf。</p>
+<p>这三个其实都只是添加了一些监控功能的类，具体还需要查看相对应的父类：UnpooledUnsafeNoCleanerDirectByteBuf, UnpooledUnsafeDirectByteBuf, UnpooledDirectByteBuf。其关系：</p>
+<p><img src="evernotecid://030B6737-EB59-4FA5-B258-B85DAAD049D0/appyinxiangcom/7066058/ENResource/p7345" alt="6152fbef5328a4f62ec298ab588b5a86.png"></p>
+<p>先说一下 UnpooledUnsafeNoCleanerDirectByteBuf, UnpooledUnsafeDirectByteBuf 两位的区别</p>
+<p>NoCleaner 其实就是指 ByteBuffer 在 allocateDirect 时候会使用 <code>PlatformDependent.allocateDirectNoCleaner</code> 而 freeDirect 时候会使用 <code>PlatformDependent.freeDirectNoCleaner</code>。而后者则是使用 <code>ByteBuffer.allocateDirect</code> 与 <code>PlatformDependent.freeDirectBuffer</code></p>
+<p>那就来看看这两对方法的两两比较即可</p>
+<h4 id="Unsafe-的-allocateDirect-组比较"><a href="#Unsafe-的-allocateDirect-组比较" class="headerlink" title="Unsafe 的 allocateDirect 组比较"></a>Unsafe 的 <code>allocateDirect</code> 组比较</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> ByteBuffer <span class="title function_">allocateDirectNoCleaner</span><span class="params">(<span class="type">int</span> capacity)</span> &#123;</span><br><span class="line">    <span class="keyword">assert</span> USE_DIRECT_BUFFER_NO_CLEANER;</span><br><span class="line"></span><br><span class="line">    incrementMemoryCounter(capacity); <span class="comment">// 内存使用记录增加 capacity</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> PlatformDependent0.allocateDirectNoCleaner(capacity);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        decrementMemoryCounter(capacity); <span class="comment">// 若分配失败则内存使用记录减少对应的值</span></span><br><span class="line">        throwException(e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>PlatformDependent0.allocateDirectNoCleaner</code> </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> ByteBuffer <span class="title function_">allocateDirectNoCleaner</span><span class="params">(<span class="type">int</span> capacity)</span> &#123;</span><br><span class="line">    <span class="comment">// Calling malloc with capacity of 0 may return a null ptr or a memory address that can be used.</span></span><br><span class="line">    <span class="comment">// Just use 1 to make it safe to use in all cases:</span></span><br><span class="line">    <span class="comment">// See: http://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html</span></span><br><span class="line">    <span class="keyword">return</span> newDirectBuffer(UNSAFE.allocateMemory(Math.max(<span class="number">1</span>, capacity)), capacity); <span class="comment">// 先分配内存并获取内存地址，再调用 newDirectBuffer</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> ByteBuffer <span class="title function_">newDirectBuffer</span><span class="params">(<span class="type">long</span> address, <span class="type">int</span> capacity)</span> &#123;</span><br><span class="line">    ObjectUtil.checkPositiveOrZero(capacity, <span class="string">&quot;capacity&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> (ByteBuffer) DIRECT_BUFFER_CONSTRUCTOR.newInstance(address, capacity); <span class="comment">// 通过 DirectByteBuffer 暴露了 address 的构造器来创建 ByteBuffer</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable cause) &#123;</span><br><span class="line">        <span class="comment">// Not expected to ever throw!</span></span><br><span class="line">        <span class="keyword">if</span> (cause <span class="keyword">instanceof</span> Error) &#123;</span><br><span class="line">            <span class="keyword">throw</span> (Error) cause;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">Error</span>(cause);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>而后者，直接创建了一个 DirectByteBuffer，借助 JDK 的 DirectByteBuffer 本身的垃圾回收进行内存管理（可参考<a href="">Netty 中的 ByteBuf — ByteBuffer 与 ByteBuf</a>）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> ByteBuffer <span class="title function_">allocateDirect</span><span class="params">(<span class="type">int</span> capacity)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">DirectByteBuffer</span>(capacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Unsafe-的-freeDirect-组比较"><a href="#Unsafe-的-freeDirect-组比较" class="headerlink" title="Unsafe 的 freeDirect 组比较"></a>Unsafe 的 <code>freeDirect</code> 组比较</h5><p><code>UnpooledUnsafeNoCleanerDirectByteBuf.freeDirect</code> 调用  <code>PlatformDependent</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">freeDirectNoCleaner</span><span class="params">(ByteBuffer buffer)</span> &#123;</span><br><span class="line">    <span class="keyword">assert</span> USE_DIRECT_BUFFER_NO_CLEANER;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">capacity</span> <span class="operator">=</span> buffer.capacity();</span><br><span class="line">    PlatformDependent0.freeMemory(PlatformDependent0.directBufferAddress(buffer)); <span class="comment">// 释放内存</span></span><br><span class="line">    decrementMemoryCounter(capacity); <span class="comment">// 降低记录总内存数量</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>PlatformDependent0.directBufferAddress</code> 是获取其 buffer 的内存地址信息，这个信息获取逻辑是通过获取 <code>DirectByteBuffer</code> 的 address 字段信息，而这个字段是在 PlatformDependent0 初始化时通过反射获取的（其中验证 Buffer 是否是 DirecitByteBuffer 使用了 Unsafe 获取值来判断）。</p>
+<p>当获取到了内存地址之后自然就可以通过 Unsafe.freeMemory(address) 来释放内存了。</p>
+<p><code>UnpooledUnsafeDirectByteBuf.freeDirect</code> 调用 <code>PlatformDependent</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">freeDirectBuffer</span><span class="params">(ByteBuffer buffer)</span> &#123;</span><br><span class="line">    CLEANER.freeDirectBuffer(buffer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>CLEANER 是一个针对 Java9+ 版本的类（<code>io.netty.util.internal.CleanerJava9</code>），Java9 为空操作。CleanerJava9 主要起用的是 <code>sun.misc.Unsafe.invokeCleaner</code>. 此方法即是调用 <code>DirectByteBuffer</code> 的 Cleaner，这是一个利用 PhantomReference 来管理内存的手段。</p>
+<p><code>UnpooledDirectByteBuf</code> 就相对来说毕竟简单，<code>allocate</code> 还是直接调用 JDK 的 <code>DirectByteBuffer</code> 相关 API，<code>free</code> 还是同样是使用 <code>Cleaner</code></p>
+<h3 id="toLeakAwareBuffer"><a href="#toLeakAwareBuffer" class="headerlink" title="toLeakAwareBuffer"></a><code>toLeakAwareBuffer</code></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">static</span> ByteBuf <span class="title function_">toLeakAwareBuffer</span><span class="params">(ByteBuf buf)</span> &#123;</span><br><span class="line">    ResourceLeakTracker&lt;ByteBuf&gt; leak;</span><br><span class="line">    <span class="keyword">switch</span> (ResourceLeakDetector.getLevel()) &#123;</span><br><span class="line">        <span class="keyword">case</span> SIMPLE:</span><br><span class="line">            leak = AbstractByteBuf.leakDetector.track(buf);</span><br><span class="line">            <span class="keyword">if</span> (leak != <span class="literal">null</span>) &#123;</span><br><span class="line">                buf = <span class="keyword">new</span> <span class="title class_">SimpleLeakAwareByteBuf</span>(buf, leak);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ADVANCED:</span><br><span class="line">        <span class="keyword">case</span> PARANOID:</span><br><span class="line">            leak = AbstractByteBuf.leakDetector.track(buf);</span><br><span class="line">            <span class="keyword">if</span> (leak != <span class="literal">null</span>) &#123;</span><br><span class="line">                buf = <span class="keyword">new</span> <span class="title class_">AdvancedLeakAwareByteBuf</span>(buf, leak);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> buf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里涉及到 Netty 的一个内存泄露监控措施。</p>
+<h4 id="ResourceLeakDetector-介绍"><a href="#ResourceLeakDetector-介绍" class="headerlink" title="ResourceLeakDetector 介绍"></a>ResourceLeakDetector 介绍</h4><p>主要参考文章: <a target="_blank" rel="noopener" href="https://ylgrgyq.github.io/2017/11/11/netty-resource-leack-detector/">Netty 的资源泄露探测机制</a></p>
+<ol>
+<li>ResourceLeakDetector 能对占用资源的对象进行监控，如果对象被 GC 之前没有主动释放资源，则 ResourceLeakDetector 会发现这个泄露，并记录日志</li>
+<li>ResourceLeakDetector 主要用于 ByteBuf（Heap And Direct） 的记录，若未调用 release 时候可以通过日志告知出现泄漏。</li>
+</ol>
+<p>Level 说明:</p>
+<ul>
+<li>SIMPLE: 默认级别，简单抽样，仅报告是否存在泄漏  </li>
+<li>PARANOID: 所有均采样，报告对象最后一次访问的地址，消耗极高，只测试使用  </li>
+<li>ADVANCED: 抽样，报告对象最后一次访问的地址，消耗较高</li>
+<li>DISABLED: 关闭</li>
+</ul>
+<p>ResourceLeakDetector 准备流程即 <code>AbstractByteBuf.leakDetector.track()</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> ResourceLeakDetector&lt;ByteBuf&gt; leakDetector =</span><br><span class="line">        ResourceLeakDetectorFactory.instance().newResourceLeakDetector(ByteBuf.class);</span><br></pre></td></tr></table></figure>
+
+<p>实际调用 <code>DefaultResourceLeakDetectorFactory.newResourceLeakDetector</code> 方法（非 deprecation），传入时候</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;T&gt; ResourceLeakDetector&lt;T&gt; <span class="title function_">newResourceLeakDetector</span><span class="params">(Class&lt;T&gt; resource, <span class="type">int</span> samplingInterval)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (customClassConstructor != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">            ResourceLeakDetector&lt;T&gt; leakDetector =</span><br><span class="line">                    (ResourceLeakDetector&lt;T&gt;) customClassConstructor.newInstance(resource, samplingInterval);</span><br><span class="line">            logger.debug(<span class="string">&quot;Loaded custom ResourceLeakDetector: &#123;&#125;&quot;</span>,</span><br><span class="line">                    customClassConstructor.getDeclaringClass().getName());</span><br><span class="line">            <span class="keyword">return</span> leakDetector;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            logger.error(</span><br><span class="line">                    <span class="string">&quot;Could not load custom resource leak detector provided: &#123;&#125; with the given resource: &#123;&#125;&quot;</span>,</span><br><span class="line">                    customClassConstructor.getDeclaringClass().getName(), resource, t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ResourceLeakDetector&lt;T&gt; resourceLeakDetector = <span class="keyword">new</span> <span class="title class_">ResourceLeakDetector</span>&lt;T&gt;(resource, samplingInterval);</span><br><span class="line">    logger.debug(<span class="string">&quot;Loaded default ResourceLeakDetector: &#123;&#125;&quot;</span>, resourceLeakDetector);</span><br><span class="line">    <span class="keyword">return</span> resourceLeakDetector;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>check 是否有通过 <code>io.netty.customResourceLeakDetector</code> 引入的自定义 ResourceLeakDetector，若有则创建该类型的 ResourceLeakDetector</li>
+<li>samplingInterval 指代采样间隔时间，默认 128 millsSecends，可通过 <code>io.netty.leakDetection.samplingInterval</code> 设置</li>
+</ol>
+<h5 id="track"><a href="#track" class="headerlink" title="track()"></a><code>track()</code></h5><p>创建 <code>ResourceLeakTracker</code>，该类将会在 Resource 被 deallocate 后自动调用 close() 方法，从其创建方法中我们能看出 PARANOID 模式与其他的区别</p>
+<p>部分代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (level.ordinal() &lt; Level.PARANOID.ordinal()) &#123;</span><br><span class="line">    <span class="keyword">if</span> ((PlatformDependent.threadLocalRandom().nextInt(samplingInterval)) == <span class="number">0</span>) &#123; <span class="comment">// 使用间隔抽样</span></span><br><span class="line">        reportLeak();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">DefaultResourceLeak</span>(obj, refQueue, allLeaks);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br><span class="line">reportLeak();</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">DefaultResourceLeak</span>(obj, refQueue, allLeaks);</span><br></pre></td></tr></table></figure>
+
+<p>这里抽样的逻辑是，随机值实现是 0 - samplingInterval 均态分布的，即获取到 0 的时候则为使用间隔是符合预期的（调用大量时）。</p>
+<p>先说说 DefaultResourceLeak 的实现</p>
+<p>DefaultResourceLeak 是继承的 WeakReference，其 ResourceLeakDetector 初始化时候会持有一个 ReferenceQueue(refQ)，初始化 DefaultResourceLeak 时会将其队列加入构造器，这样 refQ 就与该 DefaultResourceLeak 绑定，在对象被 <code>close()</code> 的时候执行 <code>WeakReference.clear</code> 让弱引用不因为 gc 的原因进入 ReferenceQueue。<strong>若是没有调用 <code>close()</code> 随着 gc 将其引用的对象回收，其 WeakReference 也会被回收，其 ref 将会进入 refQ</strong>，此时队列中存在的就是未调用 <code>close()</code> 的 Resource 了。</p>
+<p>接下来我们看看 <code>reportLeak()</code> 干了啥</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">reportLeak</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!logger.isErrorEnabled()) &#123; <span class="comment">// 若没有答应日志开口，就清理队列即可</span></span><br><span class="line">        clearRefQueue();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Detect and report previous leaks.</span></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">        <span class="type">DefaultResourceLeak</span> <span class="variable">ref</span> <span class="operator">=</span> (DefaultResourceLeak) refQueue.poll(); <span class="comment">// 获取每一个被 clear 的 DefaultResourceLeak</span></span><br><span class="line">        <span class="keyword">if</span> (ref == <span class="literal">null</span>) &#123; <span class="comment">// 队列中没有对象，完成</span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!ref.dispose()) &#123; <span class="comment">// 返回值表示已被处理，应该是个 double check</span></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">records</span> <span class="operator">=</span> ref.toString();</span><br><span class="line">        <span class="keyword">if</span> (reportedLeaks.putIfAbsent(records, Boolean.TRUE) == <span class="literal">null</span>) &#123; <span class="comment">// 打印记录的信息</span></span><br><span class="line">            <span class="keyword">if</span> (records.isEmpty()) &#123; <span class="comment">// 有无详情</span></span><br><span class="line">                reportUntracedLeak(resourceType);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                reportTracedLeak(resourceType, records);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们看 <code>DefaultResourceLeak</code> 会知道它的信息是会由 <code>record</code> 方法记录生成，这里我们记住即可。</p>
+<p>在回到 <code>AbstractByteBufAllocator.toLeakAwareBuffer</code> （我们的起点）。这里会创建 SimpleLeakAwareByteBuf 或者 AdvancedLeakAwareByteBuf，其在构建起中会关联上面创建的 DefaultResourceLeak，而其中的 <code>release()</code> 方法将会调用 <code>ResourceLeak.close()</code> 方法来执行上面所说的逻辑，其中 AdvancedLeakAwareByteBuf 几乎对每一个 ByteBuf 的读写操作都进行了 <code>DefaultResourceLeak.record()</code> 的调用。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/NIO/" rel="tag"># NIO</a>
+              <a href="/tags/Netty%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E7%B3%BB%E5%88%97/" rel="tag"># Netty源码分析系列</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/11/12/ByteBuffer-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" rel="prev" title="ByteBuffer 源码剖析">
+                  <i class="fa fa-angle-left"></i> ByteBuffer 源码剖析
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/12/10/Netty%E4%B8%AD%E7%9A%84ByteBuf-Pooled%E4%B8%8E%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="next" title="Netty中的ByteBuf-Pooled与内存管理">
+                  Netty中的ByteBuf-Pooled与内存管理 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

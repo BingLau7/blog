@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="并行还是并发？并发：同一时间应对多件事情的能力 并行：同一时间动手做多件事情的能力">
+<meta property="og:type" content="article">
+<meta property="og:title" content="并发的姿势">
+<meta property="og:url" content="http://example.com/2017/09/18/%E5%B9%B6%E5%8F%91%E7%9A%84%E5%A7%BF%E5%8A%BF/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="并行还是并发？并发：同一时间应对多件事情的能力 并行：同一时间动手做多件事情的能力">
+<meta property="og:locale">
+<meta property="og:image" content="https://github.com/BingLau7/blog/blob/master/images/blog_24/1.jpg?raw=true">
+<meta property="article:published_time" content="2017-09-18T08:54:03.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.761Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="并发编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/BingLau7/blog/blob/master/images/blog_24/1.jpg?raw=true">
+
+
+<link rel="canonical" href="http://example.com/2017/09/18/%E5%B9%B6%E5%8F%91%E7%9A%84%E5%A7%BF%E5%8A%BF/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2017/09/18/%E5%B9%B6%E5%8F%91%E7%9A%84%E5%A7%BF%E5%8A%BF/","path":"2017/09/18/并发的姿势/","title":"并发的姿势"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>并发的姿势 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E8%BF%98%E6%98%AF%E5%B9%B6%E5%8F%91%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">并行还是并发？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Java-%E7%9A%84%E7%BA%BF%E7%A8%8B%E4%B8%8E%E9%94%81%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">Java 的线程与锁模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E3%80%8E%E5%A4%A9%E7%84%B6%E3%80%8F%E7%9A%84%E5%B9%B6%E5%8F%91%EF%BC%8C%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">『天然』的并发，函数式编程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E4%BF%A1%E9%A1%BA%E5%BA%8F%E8%BF%9B%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">通信顺序进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Actor"><span class="nav-number">5.</span> <span class="nav-text">Actor</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Celery"><span class="nav-number">5.0.1.</span> <span class="nav-text">Celery</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Akka"><span class="nav-number">5.0.2.</span> <span class="nav-text">Akka</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Actor-%E7%B3%BB%E7%BB%9F%E5%92%8C-Actor-%E5%AF%B9%E8%B1%A1%E5%85%B7%E6%9C%89%E7%9A%84%E7%89%B9%E7%82%B9%EF%BC%9A"><span class="nav-number">5.0.3.</span> <span class="nav-text">Actor 系统和 Actor 对象具有的特点：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E4%B9%A6%E7%B1%8D"><span class="nav-number">6.</span> <span class="nav-text">参考书籍</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2017/09/18/%E5%B9%B6%E5%8F%91%E7%9A%84%E5%A7%BF%E5%8A%BF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="并发的姿势 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          并发的姿势
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-09-18 16:54:03" itemprop="dateCreated datePublished" datetime="2017-09-18T16:54:03+08:00">2017-09-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%9F%BA%E7%A1%80%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">基础原理</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="并行还是并发？"><a href="#并行还是并发？" class="headerlink" title="并行还是并发？"></a>并行还是并发？</h3><p>并发：<strong>同一时间应对</strong>多件事情的能力</p>
+<p>并行：<strong>同一时间动手</strong>做多件事情的能力</p>
+<p><img src="https://github.com/BingLau7/blog/blob/master/images/blog_24/1.jpg?raw=true" alt="并发与并行"></p>
+<span id="more"></span>
+
+
+<p>并发：两队列人享有一台咖啡机，每列都能获得咖啡</p>
+<p>并行：一队列人享有独有的咖啡机，互不干扰</p>
+<p>而获取咖啡从局部来看又是串行，每个人都需要等前面人使用完成后才能使用（并发中也可能需要不定等别队列的人来获取）</p>
+<h3 id="Java-的线程与锁模型"><a href="#Java-的线程与锁模型" class="headerlink" title="Java 的线程与锁模型"></a>Java 的线程与锁模型</h3><p>线程：Java 并发中的基本单元，可以将一个线程看做一个控制流，线程之间通过共享内存进行通信。</p>
+<p>使用锁来达到在使用共享内存时，线程之间的使用形成互斥的目的。</p>
+<p>简单的哲学家问题：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.github.binglau.concurrency;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> io.github.binglau.bean.Chopstick;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Random;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 文件描述: 哲学家问题</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Philosopher</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Chopstick left, right;</span><br><span class="line">    <span class="keyword">private</span> Random random;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Philosopher</span><span class="params">(Chopstick left, Chopstick right)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.left = left;</span><br><span class="line">        <span class="built_in">this</span>.right = right;</span><br><span class="line">        random = <span class="keyword">new</span> <span class="title class_">Random</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 死锁：当所有人都持有一只筷子并等待另一个放开一只筷子</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">                Thread.sleep(random.nextInt(<span class="number">100</span>) * <span class="number">10</span>); <span class="comment">// 思考时间</span></span><br><span class="line">                <span class="comment">// 获取对象锁</span></span><br><span class="line">                <span class="keyword">synchronized</span> (left) &#123; <span class="comment">// 拿起筷子 1</span></span><br><span class="line">                    <span class="keyword">synchronized</span> (right)  &#123; <span class="comment">// 拿起筷子 2</span></span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">&quot;-ok&quot;</span>);</span><br><span class="line">                        Thread.sleep(random.nextInt(<span class="number">100</span>) * <span class="number">10</span>); <span class="comment">// 进餐时间</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Chopstick</span> <span class="variable">c1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Chopstick</span>();</span><br><span class="line">        <span class="type">Chopstick</span> <span class="variable">c2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Chopstick</span>();</span><br><span class="line">        <span class="type">Chopstick</span> <span class="variable">c3</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Chopstick</span>();</span><br><span class="line">        <span class="type">Chopstick</span> <span class="variable">c4</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Chopstick</span>();</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">Philosopher</span>(c1, c2)).start();</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">Philosopher</span>(c2, c3)).start();</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">Philosopher</span>(c3, c4)).start();</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">Philosopher</span>(c4, c1)).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>线程与所模型带来的三个主要危害：</p>
+<ul>
+<li>静态条件</li>
+<li>死锁</li>
+<li>内存可见性（Java 内存模型定义了何时一个线程对内存的修改对另一个线程可见，这样两个线程都需要进行同步的情况下，线程获得的一个值可能已经是一个失效的值）</li>
+</ul>
+<p>优势：</p>
+<ul>
+<li>普遍，更接近本质，能解决几乎所有粒度的所有问题</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>难以维护</li>
+<li>难以测试（共享内存决定的不确定性）</li>
+</ul>
+<h3 id="『天然』的并发，函数式编程"><a href="#『天然』的并发，函数式编程" class="headerlink" title="『天然』的并发，函数式编程"></a>『天然』的并发，函数式编程</h3><figure class="highlight clojure"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">;用于延时执行某个函数</span></span><br><span class="line">(<span class="keyword">defn</span> <span class="title">make-heavy</span> [f]</span><br><span class="line">  (<span class="name"><span class="built_in">fn</span></span> [&amp; args]</span><br><span class="line">    (<span class="name">Thread/sleep</span> <span class="number">1000</span>)</span><br><span class="line">    (<span class="name"><span class="built_in">apply</span></span> f args)))</span><br><span class="line"></span><br><span class="line">(<span class="name"><span class="built_in">time</span></span> (<span class="name"><span class="built_in">doall</span></span> (<span class="name"><span class="built_in">map</span></span> (<span class="name">make-heavy</span> inc) [<span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span>])))</span><br><span class="line">(<span class="name"><span class="built_in">time</span></span> (<span class="name"><span class="built_in">doall</span></span> (<span class="name">pmap</span> (<span class="name">make-heavy</span> inc) [<span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span>])))</span><br><span class="line"></span><br><span class="line"><span class="comment">;&quot;Elapsed time: 5012.47372 msecs&quot;</span></span><br><span class="line"><span class="comment">;&quot;Elapsed time: 1012.144992 msecs&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">;pmap并行地将make-heavy包装后的inc作用在集合的5个元素上，总耗时就接近于于单个调用的耗时，也就是一秒。</span></span><br><span class="line"><span class="comment">;pmap的并行，从实现上来说，是集合有多少个元素就使用多少个线程</span></span><br></pre></td></tr></table></figure>
+
+<p>容易推理，便于测试，消除并发与串行的区别</p>
+<h3 id="通信顺序进程"><a href="#通信顺序进程" class="headerlink" title="通信顺序进程"></a>通信顺序进程</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> concurrency</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* 文件描述：</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// goroutine 使用时候的一些问题</span></span><br><span class="line"><span class="comment">// 1. 主 goroutine 结束后 子 goroutine 也会结束</span></span><br><span class="line"><span class="comment">// 2. 容易发生死锁，就是即使所有工作已经完成了但</span></span><br><span class="line"><span class="comment">// 主 goroutine 无法获得工作 goroutine 的 完成状态。</span></span><br><span class="line"><span class="comment">// 死锁的另一个情况就是，当两个不同的 goroutine (或者线程)</span></span><br><span class="line"><span class="comment">// 都锁定了受保护的资源而且同时尝试去获取对方资源的时候</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 解决办法:</span></span><br><span class="line"><span class="comment">// 1. 下面所示主 goroutine 在一个 done 通道上等待</span></span><br><span class="line"><span class="comment">// 2. 使用 sync.WaitGroup 来让每个工作 goroutine 报告自己</span></span><br><span class="line"><span class="comment">// 的完成状态。但是，使用 sync.WaitGroup 本身也会产生死锁，</span></span><br><span class="line"><span class="comment">// 特别是当所有工作 goroutine 都处于锁定状态的时候（等待接收</span></span><br><span class="line"><span class="comment">// 通道的数据）调用 sync.WaitGroup.Wait()</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 通道为并发运行的 goroutine 之间提供了一种无锁的通信方式（尽管</span></span><br><span class="line"><span class="comment">// 内部实现可能使用了锁，但我们无需关系）。当一个通道发生通信时，发</span></span><br><span class="line"><span class="comment">// 送通道和接收通道（包括它们对应的 goroutine）都处于同步状态</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Go 语言并不保证在通道里发送指针或者引用类型（如切片或映射）的安全性，</span></span><br><span class="line"><span class="comment">// 因为指针指向的内容或者所引用的值可能在对方接收到时已被发送方修改。</span></span><br><span class="line"><span class="comment">// 所有，当涉及到指针和引用时，我们必须保证这些值在任何时候只能被一</span></span><br><span class="line"><span class="comment">// 个 goroutine 访问得到，也就是说，对这些值的访问必须是串行进行的。</span></span><br><span class="line"><span class="comment">// 除非文档特别声明传递这个指针是安全的。</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Job <span class="keyword">struct</span> &#123;</span><br><span class="line">	Id <span class="type">int</span></span><br><span class="line">	Name <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用并发最简单的方式就是用一个 goroutine 来准备工作</span></span><br><span class="line"><span class="comment">// 然后让另一个 goroutine 来执行处理，让主 goroutine 和</span></span><br><span class="line"><span class="comment">// 一些通道来安排一切事情</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Demo</span><span class="params">()</span></span> &#123;</span><br><span class="line">	jobList := <span class="built_in">make</span>([]Job, <span class="number">10</span>)  <span class="comment">// 任务列表</span></span><br><span class="line">	jobs := <span class="built_in">make</span>(<span class="keyword">chan</span> Job)</span><br><span class="line">	done := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>, <span class="built_in">len</span>(jobList))</span><br><span class="line"></span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; <span class="comment">// 创建 goroutine</span></span><br><span class="line">		<span class="keyword">for</span> _, job := <span class="keyword">range</span> jobList &#123; <span class="comment">// 遍历 jobList 然后将每个工作发送到 jobs 通道</span></span><br><span class="line">			jobs &lt;- job <span class="comment">// 通道没有缓冲，所以马上阻塞，等待别的 goroutine 接收</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">close</span>(jobs) <span class="comment">// 发完任务之后关闭通道</span></span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> job := <span class="keyword">range</span> jobs &#123; <span class="comment">// 接收上面的 goroutine 传来的 job (从 jobs 通道)</span></span><br><span class="line">			job.Id = <span class="number">1</span></span><br><span class="line">			job.Name = <span class="string">&quot;Name&quot;</span></span><br><span class="line">			fmt.Println(job)</span><br><span class="line">			done &lt;- <span class="literal">true</span> <span class="comment">// 发送完成表示等待主 goroutine 接收</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(jobList); i++ &#123;</span><br><span class="line">		&lt;- done <span class="comment">// 阻塞，等待接收</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 对于通道的使用，我们有两个经验。</span></span><br><span class="line">	<span class="comment">// 一. 我们只有在后面要检查通道是否关闭（例如在一个 for ... range 循环</span></span><br><span class="line">	<span class="comment">// 里，或者 select, 或者使用 &lt;- 操作符来检查是否可以接收等）的时候才需要</span></span><br><span class="line">	<span class="comment">// 显式地关闭通道；</span></span><br><span class="line">	<span class="comment">// 二. 应该由发送端的 goroutine 关闭通道，而不是由接收端的 goroutine 来完成</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Actor"><a href="#Actor" class="headerlink" title="Actor"></a>Actor</h3><p>Actor 是一种计算实体，它会对收到的消息做出回应，并且可以做下列事情：</p>
+<ul>
+<li>向其他 Actor 对象发送一定数量的消息</li>
+<li>创建一定数量的新 Actor 对象</li>
+<li>设定对下一条消息做出的回应方式</li>
+</ul>
+<h5 id="Celery"><a href="#Celery" class="headerlink" title="Celery"></a>Celery</h5><p>以前的我，使用过一种类似于 Actor 发送消息的并发模式，使用消息队列来做并发，最典型的莫过于使用 <code>rabbitmq</code> 的 <code>celery</code></p>
+<p>一般是这样的，写一个 <code>worker</code> 在一个进程跑着，通过 <code>celery</code> 来调用 <code>worker</code></p>
+<blockquote>
+<p> <strong>Celery is used in production systems to process millions of tasks a day.</strong></p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># __init__.py</span></span><br><span class="line"><span class="keyword">from</span> celery_demo.worker <span class="keyword">import</span> demo_worker</span><br><span class="line"></span><br><span class="line"><span class="comment"># celery_app.py</span></span><br><span class="line"><span class="comment"># celery -A celery_demo.worker.celery_app worker -l info</span></span><br><span class="line"><span class="keyword">from</span> celery <span class="keyword">import</span> Celery</span><br><span class="line"></span><br><span class="line">RABBITMQ_DSN = <span class="string">&#x27;amqp://guest@127.0.0.1&#x27;</span></span><br><span class="line"></span><br><span class="line">app = Celery(<span class="string">&#x27;worker&#x27;</span>,</span><br><span class="line">             broker=RABBITMQ_DSN,</span><br><span class="line">             include=[<span class="string">&#x27;celery_demo.worker.demo_worker&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># demo_worker.py</span></span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> log</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> celery_demo.worker.celery_app <span class="keyword">import</span> app</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.task</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">x, y</span>):</span><br><span class="line">    time.sleep(<span class="number">3</span>)</span><br><span class="line">    result = x + y</span><br><span class="line">    log.app.info(<span class="string">f&#x27;result: <span class="subst">&#123;result&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line">  </span><br><span class="line"><span class="comment"># demo.py</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> celery_demo.worker <span class="keyword">import</span> demo_worker</span><br><span class="line"><span class="keyword">import</span> log</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    demo_worker.add.delay(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    log.app.info(<span class="string">&#x27;end&#x27;</span>)</span><br><span class="line">    </span><br><span class="line"><span class="comment"># log</span></span><br><span class="line">[INFO app <span class="number">2017</span>-09-09 <span class="number">11</span>:<span class="number">53</span>:<span class="number">28</span>,<span class="number">992</span>] end</span><br><span class="line">[INFO app <span class="number">2017</span>-09-09 <span class="number">11</span>:<span class="number">53</span>:<span class="number">31</span>,<span class="number">997</span>] result: <span class="number">3</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="Akka"><a href="#Akka" class="headerlink" title="Akka"></a>Akka</h5><blockquote>
+<p> Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala</p>
+<ul>
+<li>Simpler Concurrent &amp; Distributed Systems</li>
+<li>Resilient by Design</li>
+<li>High Performance</li>
+<li>Elastic &amp; Decentralized</li>
+<li>Reactive Streaming Data</li>
+</ul>
+</blockquote>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.binglau.scala.akka.demo</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> akka.actor.&#123;<span class="type">Actor</span>, <span class="type">ActorSystem</span>, <span class="type">Props</span>&#125;</span><br><span class="line"><span class="keyword">import</span> akka.event.<span class="type">Logging</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ActorPrint</span> <span class="keyword">extends</span> <span class="title">Actor</span> </span>&#123;</span><br><span class="line">  <span class="keyword">val</span> log = <span class="type">Logging</span>(context.system, <span class="keyword">this</span>)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">receive</span></span>: <span class="type">Receive</span> = &#123;</span><br><span class="line">    <span class="keyword">case</span> msg : <span class="type">String</span> =&gt; log.info(<span class="string">&quot;receive &#123;&#125;&quot;</span>, msg)</span><br><span class="line">    <span class="keyword">case</span> _ =&gt; log.info(<span class="string">&quot;receive unknow message&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">ActorDemo</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> system = <span class="type">ActorSystem</span>(<span class="string">&quot;demo&quot;</span>)</span><br><span class="line">    <span class="keyword">val</span> printActor = system.actorOf(<span class="type">Props</span>[<span class="type">ActorPrint</span>], <span class="string">&quot;print&quot;</span>)</span><br><span class="line"></span><br><span class="line">    printActor ! <span class="string">&quot;Test&quot;</span></span><br><span class="line">    printActor ! <span class="number">123</span></span><br><span class="line"></span><br><span class="line">    system.terminate()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Actor-系统和-Actor-对象具有的特点："><a href="#Actor-系统和-Actor-对象具有的特点：" class="headerlink" title="Actor 系统和 Actor 对象具有的特点："></a>Actor 系统和 Actor 对象具有的特点：</h5><ul>
+<li><p>直接通过异步消息传递方式进行通信</p>
+<p>同一个 Actor 对象发送保证顺序，但是不同的 Actor 对象之间的发送不能保证顺序</p>
+</li>
+<li><p>状态机</p>
+<p>当 Actor 对象转换为某个预设状态时，就能够改变对未来接收到的消息的处理模式。通过变为另一种消息处理器，Actor对象就成了一种有限状态机。</p>
+</li>
+<li><p>无共享</p>
+<p>一个 Actor 对象不会与其他 Actor 对象或相关组件共享可变状态</p>
+</li>
+<li><p>无锁的并发处理方式</p>
+<p>因为 Actor 对象不会共享它们的可变状态，而且它们在同一时刻仅会接收一条消息，所以在对消息做出回应前，Actor 对象永远都不需要尝试锁定它们的状态。</p>
+</li>
+<li><p>并行性</p>
+<p>当等级较高的 Actor 对象能够将多个任务分派给多个下级 Actor 对象，或者任务重含有复杂的处理层级时，就适合通过 Actor 模型使用并行处理方式。</p>
+</li>
+<li><p>Actor 对象的系统性</p>
+<p>Actor 对象的量级都非常轻，因此在单个系统中添加许多 Actor 对象是受推荐的处理方式。任何问题都可以通过添加 Actor 对象来解决。</p>
+</li>
+</ul>
+<h3 id="参考书籍"><a href="#参考书籍" class="headerlink" title="参考书籍"></a>参考书籍</h3><p><a target="_blank" rel="noopener" href="http://wiki.fnil.net/index.php?title=Clojure%E5%B9%B6%E5%8F%91">Clojure并发</a><br><a target="_blank" rel="noopener" href="http://doc.akka.io/docs/akka/current/scala/index-actors.html">Akka 官方文档</a><br>《七周七并发模式》<br>《响应式架构——消息模式 Actor 实现与 Scala、Akka 应用集成》<br>《Go 语言程序设计》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag"># 并发编程</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/06/21/MySQL-EXPLAIN-%E6%B3%A8/" rel="prev" title="MySQL-EXPLAIN 注">
+                  <i class="fa fa-angle-left"></i> MySQL-EXPLAIN 注
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/09/20/Akka-%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD/" rel="next" title="Akka 基础功能">
+                  Akka 基础功能 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

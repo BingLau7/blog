@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="当前版本 Spring 4.3.8  自定义标签的解析自定义标签使用在很多情况下，当使用默认配置过于繁琐时候，解析工作或许是一个不得不考虑的负担。Spring 提供了可扩展 Scheme 的支持。大概需要以下几个步骤：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring-源码分析-bean的解析(3)">
+<meta property="og:url" content="http://example.com/2017/11/12/Spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-bean%E7%9A%84%E8%A7%A3%E6%9E%90%EF%BC%883%EF%BC%89/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="当前版本 Spring 4.3.8  自定义标签的解析自定义标签使用在很多情况下，当使用默认配置过于繁琐时候，解析工作或许是一个不得不考虑的负担。Spring 提供了可扩展 Scheme 的支持。大概需要以下几个步骤：">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-11-12T08:58:42.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.757Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="Spring">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2017/11/12/Spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-bean%E7%9A%84%E8%A7%A3%E6%9E%90%EF%BC%883%EF%BC%89/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2017/11/12/Spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-bean%E7%9A%84%E8%A7%A3%E6%9E%90%EF%BC%883%EF%BC%89/","path":"2017/11/12/Spring源码分析-bean的解析（3）/","title":"Spring-源码分析-bean的解析(3)"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Spring-源码分析-bean的解析(3) | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A0%87%E7%AD%BE%E7%9A%84%E8%A7%A3%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">自定义标签的解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A0%87%E7%AD%BE%E4%BD%BF%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">自定义标签使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A0%87%E7%AD%BE%E8%A7%A3%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">自定义标签解析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E6%A0%87%E7%AD%BE%E7%9A%84%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4"><span class="nav-number">1.2.1.</span> <span class="nav-text">获取标签的命名空间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8F%90%E5%8F%96%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A0%87%E7%AD%BE%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-number">1.2.2.</span> <span class="nav-text">提取自定义标签处理器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%87%E7%AD%BE%E8%A7%A3%E6%9E%90"><span class="nav-number">1.2.3.</span> <span class="nav-text">标签解析</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E4%B9%A6%E7%B1%8D"><span class="nav-number">2.</span> <span class="nav-text">参考书籍</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2017/11/12/Spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-bean%E7%9A%84%E8%A7%A3%E6%9E%90%EF%BC%883%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Spring-源码分析-bean的解析(3) | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring-源码分析-bean的解析(3)
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-11-12 16:58:42" itemprop="dateCreated datePublished" datetime="2017-11-12T16:58:42+08:00">2017-11-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">源码分析</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p> 当前版本 Spring 4.3.8</p>
+</blockquote>
+<h2 id="自定义标签的解析"><a href="#自定义标签的解析" class="headerlink" title="自定义标签的解析"></a>自定义标签的解析</h2><h3 id="自定义标签使用"><a href="#自定义标签使用" class="headerlink" title="自定义标签使用"></a>自定义标签使用</h3><p>在很多情况下，当使用默认配置过于繁琐时候，解析工作或许是一个不得不考虑的负担。Spring 提供了可扩展 Scheme 的支持。大概需要以下几个步骤：</p>
+<span id="more"></span>
+
+<ol>
+<li><p>创建一个需要扩展的组件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.github.binglau.bean;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 文件描述:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">User</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String userName;</span><br><span class="line">    <span class="keyword">private</span> String email;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>定义一个 XSD 文件描述组件内容</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span><br><span class="line">&lt;xsd:schema xmlns=<span class="string">&quot;http://www.binglau.com/schema/user&quot;</span></span><br><span class="line">            xmlns:xsd=<span class="string">&quot;http://www.w3.org/2001/XMLSchema&quot;</span></span><br><span class="line">            targetNamespace=<span class="string">&quot;http://www.binglau.com/schema/user&quot;</span></span><br><span class="line">            elementFormDefault=<span class="string">&quot;qualified&quot;</span>&gt;</span><br><span class="line"></span><br><span class="line">    &lt;xsd:element name=<span class="string">&quot;user&quot;</span>&gt;</span><br><span class="line">        &lt;xsd:complexType&gt;</span><br><span class="line">            &lt;xsd:attribute name=<span class="string">&quot;id&quot;</span> type=<span class="string">&quot;xsd:string&quot;</span>/&gt;</span><br><span class="line">            &lt;xsd:attribute name=<span class="string">&quot;userName&quot;</span> type=<span class="string">&quot;xsd:string&quot;</span>/&gt;</span><br><span class="line">            &lt;xsd:attribute name=<span class="string">&quot;email&quot;</span> type=<span class="string">&quot;xsd:string&quot;</span>/&gt;</span><br><span class="line">        &lt;/xsd:complexType&gt;</span><br><span class="line">    &lt;/xsd:element&gt;</span><br><span class="line">&lt;/xsd:schema&gt;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建一个文件，实现 <code>BeanDefinitionParser</code> 接口，用来解析 XSD 文件中的定义和组件定义</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.github.binglau;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> io.github.binglau.bean.User;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.support.BeanDefinitionBuilder;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;</span><br><span class="line"><span class="keyword">import</span> org.springframework.util.StringUtils;</span><br><span class="line"><span class="keyword">import</span> org.w3c.dom.Element;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 文件描述:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserBeanDefinitionParser</span> <span class="keyword">extends</span> <span class="title class_">AbstractSingleBeanDefinitionParser</span> &#123;</span><br><span class="line">    <span class="comment">// Element 对应的类</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> Class&lt;?&gt; getBeanClass(Element element) &#123;</span><br><span class="line">        <span class="keyword">return</span> User.class;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从 element 中解析并提取对应的元素</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">doParse</span><span class="params">(Element element, BeanDefinitionBuilder builder)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">userName</span> <span class="operator">=</span> element.getAttribute(<span class="string">&quot;userName&quot;</span>);</span><br><span class="line">        <span class="type">String</span> <span class="variable">email</span> <span class="operator">=</span> element.getAttribute(<span class="string">&quot;email&quot;</span>);</span><br><span class="line">        <span class="comment">// 将提取的数据放入 BeanDefinitionBuilder 中，待到完成所有 bean 的解析后统一注册到 beanFactory 中</span></span><br><span class="line">        <span class="keyword">if</span> (StringUtils.hasText(userName)) &#123;</span><br><span class="line">            builder.addPropertyValue(<span class="string">&quot;userName&quot;</span>, userName);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.hasText(email)) &#123;</span><br><span class="line">            builder.addPropertyValue(<span class="string">&quot;email&quot;</span>, email);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建一个 Handler 文件，扩展自 NamespaceHandlerSupport，目的是将组件注册到 Spring 容器</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.github.binglau;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.xml.NamespaceHandlerSupport;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 文件描述:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyNamespaceHandler</span> <span class="keyword">extends</span> <span class="title class_">NamespaceHandlerSupport</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">&quot;user&quot;</span>, <span class="keyword">new</span> <span class="title class_">UserBeanDefinitionParser</span>());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编写 Spring.handlers 和 Spring.schemas 文件（resources&#x2F;MATE-INF）</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">Spring.handlers</span></span><br><span class="line">http\://www.binglau.com/schema/user=io.github.binglau.MyNamespaceHandler</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">Spring.schemas</span></span><br><span class="line">http\://www.binglau.com/schema/user.xsd=user-xsd.xsd</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>测试：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns</span>=<span class="string">&quot;http://www.springframework.org/schema/beans&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:xsi</span>=<span class="string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:myname</span>=<span class="string">&quot;http://www.binglau.com/schema/user&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xsi:schemaLocation</span>=<span class="string">&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd</span></span></span><br><span class="line"><span class="string"><span class="tag">       http://www.binglau.com/schema/user http://www.binglau.com/schema/user.xsd&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">myname:user</span> <span class="attr">id</span>=<span class="string">&quot;testbean&quot;</span> <span class="attr">userName</span>=<span class="string">&quot;aaa&quot;</span> <span class="attr">email</span>=<span class="string">&quot;bbb&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;testBean&quot;</span> <span class="attr">class</span>=<span class="string">&quot;io.github.binglau.bean.TestBean&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.github.binglau;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> io.github.binglau.bean.User;</span><br><span class="line"><span class="keyword">import</span> org.junit.Test;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.BeanFactory;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.xml.XmlBeanFactory;</span><br><span class="line"><span class="keyword">import</span> org.springframework.core.io.ClassPathResource;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 文件描述:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BeanFactoryTest</span> &#123;</span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">testSimpleLoad</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">BeanFactory</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">XmlBeanFactory</span>(<span class="keyword">new</span> <span class="title class_">ClassPathResource</span>(<span class="string">&quot;beanFactory.xml&quot;</span>));</span><br><span class="line">        <span class="type">User</span> <span class="variable">user</span> <span class="operator">=</span> (User)context.getBean(<span class="string">&quot;testbean&quot;</span>);</span><br><span class="line">        System.out.println(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">结果：</span></span><br><span class="line"><span class="comment">User(userName=aaa, email=bbb)</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="自定义标签解析"><a href="#自定义标签解析" class="headerlink" title="自定义标签解析"></a>自定义标签解析</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Parse the elements at the root level in the document:</span></span><br><span class="line"><span class="comment"> * &quot;import&quot;, &quot;alias&quot;, &quot;bean&quot;.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> root the DOM root element of the document</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">parseBeanDefinitions</span><span class="params">(Element root, BeanDefinitionParserDelegate delegate)</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> (delegate.isDefaultNamespace(root)) &#123;</span><br><span class="line">		<span class="type">NodeList</span> <span class="variable">nl</span> <span class="operator">=</span> root.getChildNodes();</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nl.getLength(); i++) &#123;</span><br><span class="line">			<span class="type">Node</span> <span class="variable">node</span> <span class="operator">=</span> nl.item(i);</span><br><span class="line">			<span class="keyword">if</span> (node <span class="keyword">instanceof</span> Element) &#123;</span><br><span class="line">				<span class="type">Element</span> <span class="variable">ele</span> <span class="operator">=</span> (Element) node;</span><br><span class="line">				<span class="keyword">if</span> (delegate.isDefaultNamespace(ele)) &#123;</span><br><span class="line">					parseDefaultElement(ele, delegate);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">else</span> &#123;</span><br><span class="line">					delegate.parseCustomElement(ele);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		delegate.parseCustomElement(root);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中的 <code>delegate.parseCustomElement(ele)</code> 既是对自定义标签的解析</p>
+<p><code>BeanDefinitionParserDelegate.parseCustomElement</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> BeanDefinition <span class="title function_">parseCustomElement</span><span class="params">(Element ele)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> parseCustomElement(ele, <span class="literal">null</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// containingBd 为父类 bean，对顶层元素的解析应设置为 null</span></span><br><span class="line"><span class="keyword">public</span> BeanDefinition <span class="title function_">parseCustomElement</span><span class="params">(Element ele, BeanDefinition containingBd)</span> &#123;</span><br><span class="line">     	<span class="comment">// 获取对应的命名空间</span></span><br><span class="line">	<span class="type">String</span> <span class="variable">namespaceUri</span> <span class="operator">=</span> getNamespaceURI(ele);</span><br><span class="line">     	<span class="comment">// 根据命名空间找到对应的 NamespaceHandler</span></span><br><span class="line">	<span class="type">NamespaceHandler</span> <span class="variable">handler</span> <span class="operator">=</span> <span class="built_in">this</span>.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);</span><br><span class="line">	<span class="keyword">if</span> (handler == <span class="literal">null</span>) &#123;</span><br><span class="line">		error(<span class="string">&quot;Unable to locate Spring NamespaceHandler for XML schema namespace [&quot;</span> + namespaceUri + <span class="string">&quot;]&quot;</span>, ele);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">     	<span class="comment">// 调用自定义的 NamespaceHandler 进行解析</span></span><br><span class="line">	<span class="keyword">return</span> handler.parse(ele, <span class="keyword">new</span> <span class="title class_">ParserContext</span>(<span class="built_in">this</span>.readerContext, <span class="built_in">this</span>, containingBd));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="获取标签的命名空间"><a href="#获取标签的命名空间" class="headerlink" title="获取标签的命名空间"></a>获取标签的命名空间</h4><p>直接调用 <code>org.w3c.dom.Node</code> 中的方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> String <span class="title function_">getNamespaceURI</span><span class="params">(Node node)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> node.getNamespaceURI();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="提取自定义标签处理器"><a href="#提取自定义标签处理器" class="headerlink" title="提取自定义标签处理器"></a>提取自定义标签处理器</h4><p><code>private final XmlReaderContext readerContext</code> 即 <code>new ClassPathResource(&quot;beanFactory.xml&quot;)</code></p>
+<p>在 <code>readerContext</code> 初始化的时候其属性 <code>namespaceHandlerResolver</code> 已经被初始化为 <code>DefaultNamespaceHandlerResolver</code> 实例，所以，这里实际调用了 <code>DefaultNamespaceHandlerResolver </code>的方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Locate the &#123;<span class="doctag">@link</span> NamespaceHandler&#125; for the supplied namespace URI</span></span><br><span class="line"><span class="comment"> * from the configured mappings.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> namespaceUri the relevant namespace URI</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the located &#123;<span class="doctag">@link</span> NamespaceHandler&#125;, or &#123;<span class="doctag">@code</span> null&#125; if none found</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> NamespaceHandler <span class="title function_">resolve</span><span class="params">(String namespaceUri)</span> &#123;</span><br><span class="line">     	<span class="comment">// 获取所有已有配置的 handler 映射</span></span><br><span class="line">	Map&lt;String, Object&gt; handlerMappings = getHandlerMappings();</span><br><span class="line">     	<span class="comment">// 根据命名空间找到对应的信息</span></span><br><span class="line">	<span class="type">Object</span> <span class="variable">handlerOrClassName</span> <span class="operator">=</span> handlerMappings.get(namespaceUri);</span><br><span class="line">	<span class="keyword">if</span> (handlerOrClassName == <span class="literal">null</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (handlerOrClassName <span class="keyword">instanceof</span> NamespaceHandler) &#123;</span><br><span class="line">         	<span class="comment">// 已经做过解析的情况，直接从缓存读取</span></span><br><span class="line">		<span class="keyword">return</span> (NamespaceHandler) handlerOrClassName;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">         	<span class="comment">// 没有做过解析，则返回的是类路径</span></span><br><span class="line">		<span class="type">String</span> <span class="variable">className</span> <span class="operator">=</span> (String) handlerOrClassName;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">             	<span class="comment">// 使用反射 将类路径转换为类</span></span><br><span class="line">			Class&lt;?&gt; handlerClass = ClassUtils.forName(className, <span class="built_in">this</span>.classLoader);</span><br><span class="line">			<span class="keyword">if</span> (!NamespaceHandler.class.isAssignableFrom(handlerClass)) &#123;</span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">FatalBeanException</span>(<span class="string">&quot;Class [&quot;</span> + className + <span class="string">&quot;] for namespace [&quot;</span> + namespaceUri +</span><br><span class="line">						<span class="string">&quot;] does not implement the [&quot;</span> + NamespaceHandler.class.getName() + <span class="string">&quot;] interface&quot;</span>);</span><br><span class="line">			&#125;</span><br><span class="line">             	<span class="comment">// 初始化类</span></span><br><span class="line">			<span class="type">NamespaceHandler</span> <span class="variable">namespaceHandler</span> <span class="operator">=</span> (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);</span><br><span class="line">             	<span class="comment">// 调用自定义的 NamespaceHandler 的初始化方法</span></span><br><span class="line">			namespaceHandler.init();</span><br><span class="line">             	<span class="comment">// 记录在缓存</span></span><br><span class="line">			handlerMappings.put(namespaceUri, namespaceHandler);</span><br><span class="line">			<span class="keyword">return</span> namespaceHandler;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (ClassNotFoundException ex) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">FatalBeanException</span>(<span class="string">&quot;NamespaceHandler class [&quot;</span> + className + <span class="string">&quot;] for namespace [&quot;</span> +</span><br><span class="line">					namespaceUri + <span class="string">&quot;] not found&quot;</span>, ex);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (LinkageError err) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">FatalBeanException</span>(<span class="string">&quot;Invalid NamespaceHandler class [&quot;</span> + className + <span class="string">&quot;] for namespace [&quot;</span> +</span><br><span class="line">					namespaceUri + <span class="string">&quot;]: problem with handler class file or dependent class&quot;</span>, err);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在上面的调用<code>namespaceHandler.init();</code>中参考之前的自定义标签使用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">    registerBeanDefinitionParser(<span class="string">&quot;user&quot;</span>, <span class="keyword">new</span> <span class="title class_">UserBeanDefinitionParser</span>());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当得到自定义命名空间处理后回马上进行 <code>BeanDefinitionParser</code> 的注册以支持自定义标签</p>
+<p>注册后，命名空间处理器就可以根据标签的不同来调用不同的解析器进行解析。<code>getHandlerMappings</code> 主要功能就是读取 <code>Spring.handlers</code> 配置文件并将配置文件缓存在 map 中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Load the specified NamespaceHandler mappings lazily.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> Map&lt;String, Object&gt; <span class="title function_">getHandlerMappings</span><span class="params">()</span> &#123;</span><br><span class="line">     	<span class="comment">// 如果没有被缓存则开始进行缓存</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">this</span>.handlerMappings == <span class="literal">null</span>) &#123;</span><br><span class="line">		<span class="keyword">synchronized</span> (<span class="built_in">this</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (<span class="built_in">this</span>.handlerMappings == <span class="literal">null</span>) &#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">                     	<span class="comment">// this.handlerMappingsLocation 在构造函数中被初始化为 META-INF/Spring.handlers</span></span><br><span class="line">					<span class="type">Properties</span> <span class="variable">mappings</span> <span class="operator">=</span></span><br><span class="line">							PropertiesLoaderUtils.loadAllProperties(<span class="built_in">this</span>.handlerMappingsLocation, <span class="built_in">this</span>.classLoader);</span><br><span class="line">					<span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">						logger.debug(<span class="string">&quot;Loaded NamespaceHandler mappings: &quot;</span> + mappings);</span><br><span class="line">					&#125;</span><br><span class="line">					Map&lt;String, Object&gt; handlerMappings = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;String, Object&gt;(mappings.size());</span><br><span class="line">                     	<span class="comment">// 将 Properties 格式文件合并到 Map 格式的 handlerMappings 中</span></span><br><span class="line">					CollectionUtils.mergePropertiesIntoMap(mappings, handlerMappings);</span><br><span class="line">					<span class="built_in">this</span>.handlerMappings = handlerMappings;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">					<span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(</span><br><span class="line">							<span class="string">&quot;Unable to load NamespaceHandler mappings from location [&quot;</span> + <span class="built_in">this</span>.handlerMappingsLocation + <span class="string">&quot;]&quot;</span>, ex);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">this</span>.handlerMappings;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="标签解析"><a href="#标签解析" class="headerlink" title="标签解析"></a>标签解析</h4><p><code>NamespaceHandlerSupport#parse</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Parses the supplied &#123;<span class="doctag">@link</span> Element&#125; by delegating to the &#123;<span class="doctag">@link</span> BeanDefinitionParser&#125; that is</span></span><br><span class="line"><span class="comment"> * registered for that &#123;<span class="doctag">@link</span> Element&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> BeanDefinition <span class="title function_">parse</span><span class="params">(Element element, ParserContext parserContext)</span> &#123;</span><br><span class="line">     	<span class="comment">// 寻找解析器并进行解析操作</span></span><br><span class="line">	<span class="keyword">return</span> findParserForElement(element, parserContext).parse(element, parserContext);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Locates the &#123;<span class="doctag">@link</span> BeanDefinitionParser&#125; from the register implementations using</span></span><br><span class="line"><span class="comment"> * the local name of the supplied &#123;<span class="doctag">@link</span> Element&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> BeanDefinitionParser <span class="title function_">findParserForElement</span><span class="params">(Element element, ParserContext parserContext)</span> &#123;</span><br><span class="line">     	<span class="comment">// 获取元素名称，也就是 &lt;myname:user&gt; 中的 user，若在上面的示例中，则此时 localName 为 user</span></span><br><span class="line">	<span class="type">String</span> <span class="variable">localName</span> <span class="operator">=</span> parserContext.getDelegate().getLocalName(element);</span><br><span class="line">     	<span class="comment">// 根据 user 找到对应的解析器，也就是在 </span></span><br><span class="line">     	<span class="comment">// registerBeanDefinitionParser(&quot;user&quot;, new UserBeanDefinitionParser()) 注册的解析器</span></span><br><span class="line">	<span class="type">BeanDefinitionParser</span> <span class="variable">parser</span> <span class="operator">=</span> <span class="built_in">this</span>.parsers.get(localName);</span><br><span class="line">	<span class="keyword">if</span> (parser == <span class="literal">null</span>) &#123;</span><br><span class="line">		parserContext.getReaderContext().fatal(</span><br><span class="line">				<span class="string">&quot;Cannot locate BeanDefinitionParser for element [&quot;</span> + localName + <span class="string">&quot;]&quot;</span>, element);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> parser;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而对于 parse 方法的处理</p>
+<p><code>AbstractBeanDefinitionParser#parse</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> BeanDefinition <span class="title function_">parse</span><span class="params">(Element element, ParserContext parserContext)</span> &#123;</span><br><span class="line">     	<span class="comment">// 真正的解析工作</span></span><br><span class="line">	<span class="type">AbstractBeanDefinition</span> <span class="variable">definition</span> <span class="operator">=</span> parseInternal(element, parserContext);</span><br><span class="line">	<span class="keyword">if</span> (definition != <span class="literal">null</span> &amp;&amp; !parserContext.isNested()) &#123;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="type">String</span> <span class="variable">id</span> <span class="operator">=</span> resolveId(element, definition, parserContext);</span><br><span class="line">			<span class="keyword">if</span> (!StringUtils.hasText(id)) &#123;</span><br><span class="line">				parserContext.getReaderContext().error(</span><br><span class="line">						<span class="string">&quot;Id is required for element &#x27;&quot;</span> + parserContext.getDelegate().getLocalName(element)</span><br><span class="line">								+ <span class="string">&quot;&#x27; when used as a top-level tag&quot;</span>, element);</span><br><span class="line">			&#125;</span><br><span class="line">			String[] aliases = <span class="literal">null</span>;</span><br><span class="line">			<span class="keyword">if</span> (shouldParseNameAsAliases()) &#123;</span><br><span class="line">				<span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> element.getAttribute(NAME_ATTRIBUTE);</span><br><span class="line">				<span class="keyword">if</span> (StringUtils.hasLength(name)) &#123;</span><br><span class="line">					aliases = StringUtils.trimArrayElements(StringUtils.commaDelimitedListToStringArray(name));</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">             	<span class="comment">// 将 AbstractBeanDefinition 转换为 BeanDefinitionHolder 并注册</span></span><br><span class="line">			<span class="type">BeanDefinitionHolder</span> <span class="variable">holder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BeanDefinitionHolder</span>(definition, id, aliases);</span><br><span class="line">			registerBeanDefinition(holder, parserContext.getRegistry());</span><br><span class="line">			<span class="keyword">if</span> (shouldFireEvents()) &#123;</span><br><span class="line">                 	<span class="comment">// 需要通知监听器则进行处理</span></span><br><span class="line">				<span class="type">BeanComponentDefinition</span> <span class="variable">componentDefinition</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BeanComponentDefinition</span>(holder);</span><br><span class="line">				postProcessComponentDefinition(componentDefinition);</span><br><span class="line">				parserContext.registerComponent(componentDefinition);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (BeanDefinitionStoreException ex) &#123;</span><br><span class="line">			parserContext.getReaderContext().error(ex.getMessage(), element);</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> definition;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>AbstractSingleBeanDefinitionParser#parseInternal</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates a &#123;<span class="doctag">@link</span> BeanDefinitionBuilder&#125; instance for the</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> #getBeanClass bean Class&#125; and passes it to the</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> #doParse&#125; strategy method.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> element the element that is to be parsed into a single BeanDefinition</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> parserContext the object encapsulating the current state of the parsing process</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the BeanDefinition resulting from the parsing of the supplied &#123;<span class="doctag">@link</span> Element&#125;</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> IllegalStateException if the bean &#123;<span class="doctag">@link</span> Class&#125; returned from</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> #getBeanClass(org.w3c.dom.Element)&#125; is &#123;<span class="doctag">@code</span> null&#125;</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> #doParse</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> AbstractBeanDefinition <span class="title function_">parseInternal</span><span class="params">(Element element, ParserContext parserContext)</span> &#123;</span><br><span class="line">	<span class="type">BeanDefinitionBuilder</span> <span class="variable">builder</span> <span class="operator">=</span> BeanDefinitionBuilder.genericBeanDefinition();</span><br><span class="line">	<span class="type">String</span> <span class="variable">parentName</span> <span class="operator">=</span> getParentName(element);</span><br><span class="line">	<span class="keyword">if</span> (parentName != <span class="literal">null</span>) &#123;</span><br><span class="line">		builder.getRawBeanDefinition().setParentName(parentName);</span><br><span class="line">	&#125;</span><br><span class="line">     	<span class="comment">// 获取自定义标签中的 class，此时会调用自定义解析器如 UserBeanDefinitionParser 中的 getBeanClass 方法</span></span><br><span class="line">	Class&lt;?&gt; beanClass = getBeanClass(element);</span><br><span class="line">	<span class="keyword">if</span> (beanClass != <span class="literal">null</span>) &#123;</span><br><span class="line">		builder.getRawBeanDefinition().setBeanClass(beanClass);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">         	<span class="comment">// 若子类没有重写 getBeanClass 方法则尝试检查子类是否重写 getBeanClassName 方法</span></span><br><span class="line">		<span class="type">String</span> <span class="variable">beanClassName</span> <span class="operator">=</span> getBeanClassName(element);</span><br><span class="line">		<span class="keyword">if</span> (beanClassName != <span class="literal">null</span>) &#123;</span><br><span class="line">			builder.getRawBeanDefinition().setBeanClassName(beanClassName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	builder.getRawBeanDefinition().setSource(parserContext.extractSource(element));</span><br><span class="line">	<span class="keyword">if</span> (parserContext.isNested()) &#123;</span><br><span class="line">         	<span class="comment">// 若存在父类则使用父类的 scope 属性</span></span><br><span class="line">		<span class="comment">// Inner bean definition must receive same scope as containing bean.</span></span><br><span class="line">		builder.setScope(parserContext.getContainingBeanDefinition().getScope());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (parserContext.isDefaultLazyInit()) &#123;</span><br><span class="line">		<span class="comment">// Default-lazy-init applies to custom bean definitions as well.</span></span><br><span class="line">         	<span class="comment">// 配置延迟加载</span></span><br><span class="line">		builder.setLazyInit(<span class="literal">true</span>);</span><br><span class="line">	&#125;</span><br><span class="line">     	<span class="comment">// 调用子类重写的 doParse 方法进行解析</span></span><br><span class="line">	doParse(element, parserContext, builder);</span><br><span class="line">	<span class="keyword">return</span> builder.getBeanDefinition();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">doParse</span><span class="params">(Element element, ParserContext parserContext, BeanDefinitionBuilder builder)</span> &#123;</span><br><span class="line">	doParse(element, builder);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考书籍"><a href="#参考书籍" class="headerlink" title="参考书籍"></a>参考书籍</h2><p>《Spring源码深度解析》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring/" rel="tag"># Spring</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/11/03/Spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-bean%E7%9A%84%E8%A7%A3%E6%9E%90%EF%BC%882%EF%BC%89/" rel="prev" title="Spring-源码分析-bean的解析(2)">
+                  <i class="fa fa-angle-left"></i> Spring-源码分析-bean的解析(2)
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/11/14/Spring-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94Bean%E7%9A%84%E5%8A%A0%E8%BD%BD%E5%89%8D%E5%A5%8F/" rel="next" title="Spring 源码解析—Bean的加载前奏">
+                  Spring 源码解析—Bean的加载前奏 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="首先我们需要明确我们什么时候需要用到数据库：  当缓存并不能解决你的问题，比如写操作，事务操作 缓存的创建或过期需要通过数据库。  其次，我们可能需要一个专业的工具来指导我们优化：mysqlreport这是作为一个Mysql第三方的状态报告工具，其实就是将一下两行命令所获得的数据以一种更加人性化的方法呈现到我们眼前： 12mysql&gt; show status;mysql&gt; show e">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL优化概要">
+<meta property="og:url" content="http://example.com/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="首先我们需要明确我们什么时候需要用到数据库：  当缓存并不能解决你的问题，比如写操作，事务操作 缓存的创建或过期需要通过数据库。  其次，我们可能需要一个专业的工具来指导我们优化：mysqlreport这是作为一个Mysql第三方的状态报告工具，其实就是将一下两行命令所获得的数据以一种更加人性化的方法呈现到我们眼前： 12mysql&gt; show status;mysql&gt; show e">
+<meta property="og:locale">
+<meta property="article:published_time" content="2016-03-11T08:18:14.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.753Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="性能优化">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/","path":"2016/03/11/MySQL优化概要/","title":"MySQL优化概要"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>MySQL优化概要 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BC%98%E5%8C%96%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">索引的优化说明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%84%E5%90%88%E7%B4%A2%E5%BC%95"><span class="nav-number">1.1.</span> <span class="nav-text">组合索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%85%A2%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7%E5%88%86%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">慢查询工具分析</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81"><span class="nav-number">2.</span> <span class="nav-text">锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1"><span class="nav-number">3.</span> <span class="nav-text">事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%9F%A5%E8%AF%A2%E7%BC%93%E5%AD%98"><span class="nav-number">4.</span> <span class="nav-text">使用查询缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%B4%E6%97%B6%E8%A1%A8"><span class="nav-number">5.</span> <span class="nav-text">临时表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0"><span class="nav-number">6.</span> <span class="nav-text">线程池</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%9B%E5%BC%83%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">7.</span> <span class="nav-text">抛弃关系型数据库</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="MySQL优化概要 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL优化概要
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-03-11 16:18:14" itemprop="dateCreated datePublished" datetime="2016-03-11T16:18:14+08:00">2016-03-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>首先我们需要明确我们什么时候需要用到数据库：</p>
+<ol>
+<li>当缓存并不能解决你的问题，比如写操作，事务操作</li>
+<li>缓存的创建或过期需要通过数据库。</li>
+</ol>
+<p>其次，我们可能需要一个专业的工具来指导我们优化：<br><code>mysqlreport</code><br>这是作为一个Mysql第三方的状态报告工具，其实就是将一下两行命令所获得的数据以一种更加人性化的方法呈现到我们眼前：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show status;</span><br><span class="line">mysql&gt; show engine innodb status; </span><br></pre></td></tr></table></figure>
+
+<p>你完全可以在自己电脑上先使用这个工具，这时候我们将逐条讲解工具为我们呈现的数据</p>
+<span id="more"></span>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line">s-db:~ # mysqlreport </span><br><span class="line">MySQL 5.0.37-log         uptime 1 15:11:47      Fri Apr 24 15:35:49 2009</span><br><span class="line">__ Key ______________________________________________________________</span><br><span class="line">Buffer used   100.37M of   2.00G  %Used:   4.90</span><br><span class="line">  Current       1.02G            %Usage:  51.07</span><br><span class="line">Write hit      99.26%</span><br><span class="line">Read hit       98.71%</span><br><span class="line">__ Questions ________________________________________________________</span><br><span class="line">Total          58.09M   411.7/s</span><br><span class="line">  DMS          30.62M   217.0/s  %Total:  52.71</span><br><span class="line">  Com_         21.23M   150.4/s           36.54</span><br><span class="line">  COM_QUIT      6.14M    43.5/s           10.58</span><br><span class="line">  +Unknown    104.71k     0.7/s            0.18</span><br><span class="line">Slow 1 s           722      0.2/s           0.04  %DMS:   0.08  Log:  ON</span><br><span class="line">DMS              30.62M   217.0/s           52.71</span><br><span class="line">  SELECT       26.20M   185.7/s           45.10         85.56</span><br><span class="line">  UPDATE        3.72M    26.3/s            6.40         12.14</span><br><span class="line">  INSERT      649.28k     4.6/s            1.12          2.12</span><br><span class="line">  DELETE       54.13k     0.4/s            0.09          0.18</span><br><span class="line">  REPLACE       1.88k     0.0/s            0.00          0.01</span><br><span class="line">Com_            21.23M   150.4/s           36.54</span><br><span class="line">  change_db    21.18M   150.1/s           36.45</span><br><span class="line">  show_variab   8.94k     0.1/s            0.02</span><br><span class="line">  show_status   8.93k     0.1/s            0.02</span><br><span class="line">__ SELECT and Sort ___________________________________________________</span><br><span class="line">Scan            1.52M    10.8/s %SELECT:   5.80</span><br><span class="line">Range         865.18k     6.1/s            3.30</span><br><span class="line">Full join       3.18k     0.0/s            0.01</span><br><span class="line">Range check         0       0/s            0.00</span><br><span class="line">Full rng join       0       0/s            0.00</span><br><span class="line">Sort scan       2.34M    16.6/s</span><br><span class="line">Sort range      2.10M    14.9/s</span><br><span class="line">Sort mrg pass     739     0.0/s</span><br><span class="line">__ Table Locks ______________________________________________________</span><br><span class="line">Waited          9.17k     0.1/s  %Total:   0.03</span><br><span class="line">Immediate      32.03M   227.0/s</span><br><span class="line">__ Tables ___________________________________________________________</span><br><span class="line">Open              512 of  512    %Cache: 100.00</span><br><span class="line">Opened          2.78M    19.7/s</span><br><span class="line">__ Connections ______________________________________________________</span><br><span class="line">Max used           98 of  100      %Max:  98.00</span><br><span class="line">Total           6.15M    43.6/s</span><br><span class="line">__ Created Temp _____________________________________________________</span><br><span class="line">Disk table    332.75k     2.4/s</span><br><span class="line">Table           2.25M    16.0/s    Size:  32.0M</span><br><span class="line">File            1.48k     0.0/s</span><br><span class="line">__ Threads __________________________________________________________</span><br><span class="line">Running             2 of    5</span><br><span class="line">Cached              0 of    0      %Hit:      0</span><br><span class="line">Created         6.15M    43.6/s</span><br><span class="line">Slow                0       0/s</span><br><span class="line">__ Aborted __________________________________________________________</span><br><span class="line">Clients         5.70k     0.0/s</span><br><span class="line">Connects           36     0.0/s</span><br><span class="line">__ Bytes ____________________________________________________________</span><br><span class="line">Sent            2.74G   19.4k/s</span><br><span class="line">Received        3.70G   26.2k/s</span><br><span class="line">__ InnoDB Buffer Pool ________________________________________________</span><br><span class="line">Usage           1.00G of   1.00G  %Used: 100.00</span><br><span class="line">Read hit       99.84%</span><br><span class="line">Pages</span><br><span class="line">  Free              1            %Total:   0.00</span><br><span class="line">  Data         65.16k                     99.43 %Drty:   4.00</span><br><span class="line">  Misc            374                      0.57</span><br><span class="line">  Latched           0                      0.00</span><br><span class="line">Reads          78.05M   553.2/s</span><br><span class="line">  From file   125.51k     0.9/s            0.16</span><br><span class="line">  Ahead Rnd      1740     0.0/s</span><br><span class="line">  Ahead Sql         7     0.0/s</span><br><span class="line">Writes         16.06M   113.8/s</span><br><span class="line">Flushes         1.30M     9.2/s</span><br><span class="line">Wait Free           0       0/s</span><br><span class="line">__ InnoDB Lock ______________________________________________________</span><br><span class="line">Waits            1441     0.0/s</span><br><span class="line">Current             0</span><br><span class="line">Time acquiring</span><br><span class="line">  Total          1178 ms</span><br><span class="line">  Average           0 ms</span><br><span class="line">  Max              39 ms</span><br><span class="line">__ InnoDB Data, Pages, Rows __________________________________________</span><br><span class="line">Data</span><br><span class="line">  Reads       142.84k     1.0/s</span><br><span class="line">  Writes        1.26M     8.9/s</span><br><span class="line">  fsync       191.53k     1.4/s</span><br><span class="line">  Pending</span><br><span class="line">    Reads           0</span><br><span class="line">    Writes          0</span><br><span class="line">    fsync           0</span><br><span class="line">Pages</span><br><span class="line">  Created       1.05k     0.0/s</span><br><span class="line">  Read        173.91k     1.2/s</span><br><span class="line">  Written       1.30M     9.2/s</span><br><span class="line">Rows</span><br><span class="line">  Deleted           0       0/s</span><br><span class="line">  Inserted    149.59k     1.1/s</span><br><span class="line">  Read          3.72G   26.4k/s</span><br><span class="line">  Updated       2.51M    17.8/s</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>首先最上面的<code>uptime</code>中我们可以看到MySQL数据库的运行时间，而报告中的各项数据统计，都是通过这段运行时间的累计数据计算而得，所以，我们希望这段时间尽可能地长，至少覆盖站点高负载的时段，这样我们采集的数据才具有较好的代表性。</p>
+<h3 id="索引的优化说明"><a href="#索引的优化说明" class="headerlink" title="索引的优化说明"></a>索引的优化说明</h3><p>对于索引的介绍这里就不做过多的重复了。</p>
+<p>我们需要知道的是数据库中大概分为两种扫描模式：</p>
+<ol>
+<li>全表扫描</li>
+<li>索引扫描</li>
+</ol>
+<p>大多数时候索引扫描会比全表扫描有着更好的性能，但是并非绝对，当我们需要一个表中绝大多数数据（这个数量可能是60%以上）的时候，全表扫描就可能获得比索引扫描更好的性能，相信这并不难理解，毕竟我们阅读一本书的时候，如果向获取书中绝大部分的知识可能一页一页阅读更加迅速。</p>
+<p>当然，或许有时候数据库的查询优化器会帮助我们鉴别什么时候我们需要使用这些索引，但是我认为这应该是当我们创建一个表的时候需要考虑的内容。</p>
+<p>索引有挺多种的，除了普通索引，还有唯一索引，主键，全文索引等，但是，它们只要是索引，都会具备索引扫描的功能，不同的是它们可能会满足我们一些额外的需求。</p>
+<p>需要特别强调的是：<strong>构建索引，构建什么索引，在哪个键构建索引，这是我们自己的事，没有什么工具能够帮助我们完成这些本是我们的工作。</strong></p>
+<p>一般来说，如果一个字段出现在查询语句中基于行的选择、过滤或排序条件中，那么为该字段建立索引便是有价值的，但这也不是绝对的。我们很难给出一个描述了所有情况的列表供你参考，因为查询的过程非常复杂，它可能包含多列索引、组合索引以及联合查询等情况，所以，关键在于掌握分析方法，这样你便能够应付任何的困境。</p>
+<p>这时候有一个分析方法是我们必须掌握的：**<code>explain</code>**。它只复杂查询语句的分析。</p>
+<p>我们或许可以看看实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE `test` (  </span><br><span class="line">`id` int(11) NOT NULL auto_increment,  </span><br><span class="line">`name` varchar(255) NOT NULL,  </span><br><span class="line">PRIMARY KEY  (`id`)) </span><br></pre></td></tr></table></figure>
+
+<p>然后我填充了一些记录，内容是什么并不重要，我们这里只是用explain来分析查询语句是否使用了索引。</p>
+<p>让我们先使用主键试试</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select * from test where id=1;</span><br><span class="line">+----+-------------+-------+-------+---------------+---------+---------+-------+------+-------+</span><br><span class="line">| id | select_type | table | type  | possible_keys | key     | key_len | ref   | rows | Extra |</span><br><span class="line">+----+-------------+-------+-------+---------------+---------+---------+-------+------+-------+</span><br><span class="line">|  1 | SIMPLE      | test  | const | PRIMARY       | PRIMARY | 4       | const |    1 |       | </span><br><span class="line">+----+-------------+-------+-------+---------------+---------+---------+-------+------+-------+ </span><br></pre></td></tr></table></figure>
+
+<p>这里我们可以看到：</p>
+<ul>
+<li><code>type</code>为<code>const</code>，意味着这次查询通过索引直接找到一个匹配行，所以优化器认为它的时间复杂度为常量。</li>
+<li><code>key</code>为<code>PRIMARY</code>，意味着这次查询使用了主键索引。</li>
+</ul>
+<p>现在让我们换成普通属性：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select * from test where name=&#x27;colin&#x27;;</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+------+-------------+</span><br><span class="line">| id | select_type | table | type | possible_keys | key  | key_len | ref  | rows | Extra       |</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+------+-------------+</span><br><span class="line">|  1 | SIMPLE      | test  | ALL  | NULL          | NULL | NULL    | NULL |    4 | Using where | </span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+------+-------------+ </span><br></pre></td></tr></table></figure>
+
+<p>这时候的<code>type</code>就变成了<code>ALL</code>，表示全表扫描了。</p>
+<p>也许我们加上索引情况会有所不同吧？<br><code>mysql&gt; alter table test add key name(name);</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select * from test where name=&#x27;colin&#x27;;</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+-------+------+-------------+</span><br><span class="line">| id | select_type | table | type | possible_keys | key  | key_len | ref   | rows | Extra       |</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+-------+------+-------------+</span><br><span class="line">|  1 | SIMPLE      | test  | ref  | name          | name | 257     | const |    1 | Using where | </span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+-------+------+-------------+ </span><br></pre></td></tr></table></figure>
+
+<p>意料之中～</p>
+<p>也许……我们可以试试模糊查询：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select * from test where name like &#x27;%colin&#x27;;</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+------+-------------+</span><br><span class="line">| id | select_type | table | type | possible_keys | key  | key_len | ref  | rows | Extra       |</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+------+-------------+</span><br><span class="line">|  1 | SIMPLE      | test  | ALL  | NULL          | NULL | NULL    | NULL |    4 | Using where | </span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+------+-------------+ </span><br></pre></td></tr></table></figure>
+
+<p>看来此时的索引是帮不上忙了（少用模糊查询）</p>
+<p>对于包含<code>group by</code>的查询，数据库一般需要先将记录分组后放置在新的临时表中，然后分别对它们进行函数计算，比如<code>count()</code>、<code>sum()</code>或<code>max()</code>等。当有恰当的索引存在时，<code>group by</code>有时也可以使用索引来取代创建临时表，这当然是我们所希望的。以下这个SQL语句便利用了<code>normal_key</code>索引，避免了创建临时表。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select count(id) from key_t where key1=777 group by key3;</span><br><span class="line">+----+-------------+-------+------+---------------+------------+---------+-------+------+-----------------------------------------------------------+</span><br><span class="line">| id | select_type | table | type | possible_keys | key        | key_len | ref   | rows | Extra                                                     |</span><br><span class="line">+----+-------------+-------+------+---------------+------------+---------+-------+------+-----------------------------------------------------------+</span><br><span class="line">|  1 | SIMPLE      | key_t | ref  | normal_key    | normal_key | 4       | const | 2154 | Using where; Using index; Using temporary; Using filesort | </span><br><span class="line">+----+-------------+-------+------+---------------+------------+---------+-------+------+-----------------------------------------------------------+</span><br></pre></td></tr></table></figure>
+
+<p>先等等，我们还有一个重点</p>
+<h4 id="组合索引"><a href="#组合索引" class="headerlink" title="组合索引"></a>组合索引</h4><p>（就如同书目录的章和节）</p>
+<p><strong>最左前缀：</strong><br>顾名思义，最左优先，当我们创建了一个<code>(key1, key2, key3...)</code>的索引的时候会按照如下的索引，<code>key1</code>,<code>(key1, key2)</code>,<code>(key1, key2, key3)</code>…</p>
+<p>这时候就会有个坑了……</p>
+<p>先让我们来看看这条查询：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select * from key_t where key2=777 limit 10;</span><br><span class="line">+--------+------+------+------+</span><br><span class="line">| id     | key1 | key2 | key3 |</span><br><span class="line">+--------+------+------+------+</span><br><span class="line">| 327233 |  643 |  777 |  781 | </span><br><span class="line">| 686994 |  765 |  777 |  781 | </span><br><span class="line">| 159907 |  766 |  777 |  782 | </span><br><span class="line">|  61518 |  769 |  777 |  780 | </span><br><span class="line">| 274629 |  769 |  777 |  780 | </span><br><span class="line">| 633439 |  769 |  777 |  780 | </span><br><span class="line">| 774191 |  769 |  777 |  780 | </span><br><span class="line">| 109562 |  769 |  777 |  781 | </span><br><span class="line">| 130013 |  769 |  777 |  781 | </span><br><span class="line">| 139458 |  769 |  777 |  781 | </span><br><span class="line">+--------+------+------+------+</span><br><span class="line">10 rows in set (0.38 sec) </span><br></pre></td></tr></table></figure>
+
+<p>380ms！没错，可能你会想，我们并没有使用索引，它是全表查询，但是……：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select * from key_t where key2=777 limit 10;</span><br><span class="line">+----+-------------+-------+-------+---------------+------------+---------+------+---------+--------------------------+</span><br><span class="line">| id | select_type | table | type  | possible_keys | key        | key_len | ref  | rows    | Extra                    |</span><br><span class="line">+----+-------------+-------+-------+---------------+------------+---------+------+---------+--------------------------+</span><br><span class="line">|  1 | SIMPLE      | key_t | index | NULL          | normal_key | 12      | NULL | 1000417 | Using where; Using index | </span><br><span class="line">+----+-------------+-------+-------+---------------+------------+---------+------+---------+--------------------------+ </span><br></pre></td></tr></table></figure>
+
+<p>对不起，它用了<code>normal_key</code>，仔细看上面十行数据似乎都是按照<code>key1</code>字段来排序的，事实也是如此，这说明查询是依据<code>normal_key</code>来扫描而不是数据本身扫描，在<code>Innodb</code>类型表中数据的存储顺序是按照主键来排序的。</p>
+<p>下面让我们将这个表转换为MyISAM类型来看看：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; alter table key_t type=myisam;</span><br><span class="line">Query OK, 1000000 rows affected, 1 warning (33.49 sec)Records: 1000000  Duplicates: 0  Warnings: 0 </span><br></pre></td></tr></table></figure>
+
+<p>然后查询：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select * from key_t_myisam where key2=777 limit 10;</span><br><span class="line">+------+------+------+------+</span><br><span class="line">| id   | key1 | key2 | key3 |</span><br><span class="line">+------+------+------+------+</span><br><span class="line">| 1035 |  771 |  777 |  781 | </span><br><span class="line">| 3175 |  771 |  777 |  781 | </span><br><span class="line">| 4126 |  771 |  777 |  781 | </span><br><span class="line">| 5443 |  770 |  777 |  780 | </span><br><span class="line">| 6066 |  771 |  777 |  781 | </span><br><span class="line">| 6267 |  770 |  777 |  780 | </span><br><span class="line">| 6317 |  770 |  777 |  780 | </span><br><span class="line">| 6496 |  771 |  777 |  781 | </span><br><span class="line">| 8262 |  770 |  777 |  780 | </span><br><span class="line">| 9083 |  771 |  777 |  780 | </span><br><span class="line">+------+------+------+------+</span><br><span class="line">10 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+
+<p>看看分析结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; explain select * from key_t_myisam where key2=777 limit 10;</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span><br><span class="line">| id | select_type | table | type | possible_keys | key  | key_len | ref  | rows    | Extra       |</span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span><br><span class="line">|  1 | SIMPLE      | key_t | ALL  | NULL          | NULL | NULL    | NULL | 1000000 | Using where | </span><br><span class="line">+----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span><br></pre></td></tr></table></figure>
+
+<p>这才是货真价实的全表扫描啊！</p>
+<p>我们足可以想象当组合索引不能直接发挥作用的时候，反而给查询带来了巨大的负担，一个包含多个字段的组合索引的尺寸可能已经超过了数据本身。</p>
+<p>如果你希望结果仍然按照<code>key1</code>排序，这不是什么问题，你可以增加一个包含<code>（key2,key1）</code>字段的组合索引，注意它们的顺序，<code>（key1,key2）</code>索引和<code>（key2,key1）</code>索引完全不同，你必须根据需要来进行抉择，而优化器对此无能为力。</p>
+<p>以上我们只是举了个简单的例子，并不是鼓励你用全表扫描取代索引扫描，而是希望借此强调，一定要根据查询的需要来设计有针对性的组合索引，因为在实际应用中，很多查询不像例子中的那么简单，一个量身定制的组合索引肯定要比全表扫描更加高效，这是毋庸置疑的。</p>
+<h4 id="慢查询工具分析"><a href="#慢查询工具分析" class="headerlink" title="慢查询工具分析"></a>慢查询工具分析</h4><p>我们很容易对所有查询语句进行分析，并建立适当的索引，但这只是纸上谈兵，当到了运行环境后，随着实际数据的积累，查询计算的开销也逐渐增加，也许你会发现有些索引设计得并不理想，不可否认，错误是在所难免的。可是，在运行环境上对各种查询进行<code>explain</code>分析显然很不现实，更难的是你不知道何时去分析哪些查询。</p>
+<p>最好的办法是对每一条查询语句的时间进行记录然后再对其中比较慢的查询去分析，通过Web应用的日志功能可能也是一个比较不错的主意。</p>
+<p>但是我们这里是介绍数据库，数据库中还有一种方法可以帮助我们达到我们所想要的目的，它提供了慢查询日志，可以将执行时间超过预设值的所有查询记录到日志中，以供后期分析。</p>
+<p>在Mysql中的my.cnf开启慢查询工具</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">long_query_time = 1</span><br><span class="line">log-slow-queries = /data/var/mysql_slow.log </span><br></pre></td></tr></table></figure>
+
+<p>这意味着MySQL会自动将执行时间超过1秒的查询记录在指定路径的mysql_slow.log文件中。除此之外，你还可以将所有没有使用索引的查询也记录下来，只需增加以下选项即可：<br><code>log-queries-not-using-indexes</code><br>而在之前提及的<code>mysqlreport</code>中，我们也可以看到有关慢查询的统计：<br><code>Slow 1 s          722     0.2/s            0.04  %DMS:   0.08  Log:  ON</code></p>
+<p>我们可以使用第三方工具mysqlsla，它有着比之其他工具更加清晰的统计风格。</p>
+<p>我们还有一个优化策略，使用缓存，缓存索引，这样使用到索引的时候就不需要在磁盘中读取数据了。<br>在mysqlreport中也有这方面的信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__ Key ______________________________________________________________</span><br><span class="line">Buffer used   100.37M of   2.00G  %Used:   4.90</span><br><span class="line">  Current       1.02G            %Usage:  51.07</span><br><span class="line">Write hit      99.26%</span><br><span class="line">Read hit       98.71%</span><br></pre></td></tr></table></figure>
+
+<p>这里的缓存和之前介绍的其他缓存在本质上没什么两样，Write hit和Read hit分别代表了写缓存的命中率和读缓存的命中率，这里都在98%以上，比较正常。</p>
+<p>当然最后在索引这儿提一下使用它的代价（我们大多数优化策略其实都需要付出一些代价的）<br>首先是空间，索引使用空间比之普通文件较大，但是在如今存储空间不值钱的年代这完全不是事。<br>其次，当建立索引的字段发生更新时，会引发索引本身的更新，这将产生不小的计算开销。<br>最后，索引需要我们花费一些额外的时间来维护。</p>
+<h3 id="锁"><a href="#锁" class="headerlink" title="锁"></a>锁</h3><p>锁机制是保证当有多个用户并发访问数据库某个资源的时候，并发访问的一致性。</p>
+<p>我们可以认为查询的时间开销主要包括两部分，即</p>
+<ol>
+<li>查询本身的计算时间</li>
+<li>查询开始前的等待时间</li>
+</ol>
+<p>所以说索引影响的是前者，而锁机制影响的是后者。显然，我们的目标很明确，那就是减少等待时间。</p>
+<p>在mysqlreport中也有相应的记录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__ Table Locks ______________________________________________________</span><br><span class="line">Waited          9.17k     0.1/s  %Total:   0.03</span><br><span class="line">Immediate      32.03M   227.0/s</span><br></pre></td></tr></table></figure>
+
+<p><code>Waited</code>表示有多少次查询需要等待表锁定；<code>Immediate</code>表示有多少次查询可以立即获得表锁定，同时后面还有一个比例，表示等待表锁定的查询次数占所有查询次数的百分比，这里是0.03%，非常好，但为什么这么低呢？这需要了解MyISAM的表锁定机制。</p>
+<p>MyISAM的表锁定可以允许多个线程同时读取数据，比如<code>select</code>查询，它们之间是不需要锁等待的。但是对于更新操作（如<code>update</code>操作），它会排斥对当前表的所有其他查询，包括<code>select</code>查询。除此之外，更新操作有着默认的高优先级，这意味着当表锁释放后，更新操作将先获得锁定，然后才轮到读取操作。也就是说，如果有很多<code>update</code>操作排着长队，那么对当前表的<code>select</code>查询必须等到所有的更新都完成之后才能开始。</p>
+<p>如果你的站点主要依靠用户创造内容，那么频繁的数据更新在所难免，它将会给<code>select</code>等读取操作带来很大的影响，你可能会需要innodb的行锁定来为你提高一定的性能。</p>
+<p>但是我们需要认清楚，行锁定只是能够提高你在<code>update</code>上的等待时间，但是却不能加速<code>update</code>的时间，当你的<code>update</code>太过密集的时候，你的磁盘读写速度会称为限制你的性能的一个门槛，这种情形下或许行锁定的消耗就决定它并不是最好的选择了。</p>
+<h3 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h3><p>事务可以说是吸引大家选择innodb的一个主要原因，但是，在选择它的时候你需要先问问自己，你是否真的这么需要事务，如果没有事务，你有什么不能解决的问题，毕竟事务对于性能也是一大消耗。</p>
+<p>Innodb的实现方式是预写日志方式(WAL),当有事务提交时，也就是只有当事务日志写入磁盘后才更新数据和索引，这样即使数据库崩溃，也可以通过事务日志来恢复数据和索引。Innodb首先将它写到内存中的事务日志缓冲区，随后当事务日志写入磁盘时，Innodb才更新实际数据和索引。这里有一个关键点，那就是事务日志何时写入磁盘。</p>
+<p>为此，MySQL提供了一个配置选项，它有三个可选的值：</p>
+<ul>
+<li><code>innodb_flush_log_at_trx_commit = 1</code><br>表示事务提交时立即将事务日志写入磁盘，同时数据和索引也立即更新。这符合事务的持久性原则。</li>
+<li><code>innodb_flush_log_at_trx_commit = 0</code><br>表示事务提交时不立即将事务日志写入磁盘，而是每隔1秒写入磁盘文件一次，并且刷新到磁盘，同时更新数据和索引。这样一来，如果mysqld崩溃，那么在内存中事务日志缓冲区最近1秒的数据将会丢失，这些更新将永远无法恢复。</li>
+<li><code>innodb_flush_log_at_trx_commit = 2</code><br>表示事务提交时立即写入磁盘文件，但是不立即刷新到磁盘，而是每隔1秒刷新到磁盘一次，同时更新数据和索引。在这种情况下，即使mysqld崩溃后，位于内核缓冲区的事务日志仍然不会丢失，只有当操作系统崩溃的时候才会丢失最后1秒的数据。</li>
+</ul>
+<p>显然，将<code>innodb_flush_log_at_trx_commit</code>设置为0可以获得最佳性能，同时它的数据丢失可能性也最大。</p>
+<p>另一个重要的配置选项是Innodb数据和索引的内存缓冲池大小，MySQL提供了<code>innodb_buffer_pool_size</code>选项来设置这个数值，如果你在MySQL中大量使用Innodb类型表，则可以将缓冲池大小设置为物理内存的80%，并持续关注它的使用率，这时候mysqlreport又提供了方便。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__ InnoDB Buffer Pool ________________________________________________</span><br><span class="line">Usage           1.00G of   1.00G  %Used: 100.00</span><br><span class="line">Read hit       99.84%</span><br></pre></td></tr></table></figure>
+<h3 id="使用查询缓存"><a href="#使用查询缓存" class="headerlink" title="使用查询缓存"></a>使用查询缓存</h3><p>查询缓存的目的很简单，将<code>select</code>查询的结果缓存在内存中，以供下次直接获取。在默认情况下，MySQL是没有开启查询缓存的，我们可以进行以下配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">query_cache_size = 268435456</span><br><span class="line">query_cache_type = 1</span><br><span class="line">query_cache_limit = 1048576</span><br></pre></td></tr></table></figure>
+
+<p>这样一来，MySQL将拥有256MB的内存空间来缓存查询结果。对于以select查询为主的应用，查询缓存理所当然地起到性能提升的作用，不论是Innodb还是MyISAM，查询缓存都可以很好地工作，因为它在逻辑中位于比较高的层次。</p>
+<p>但是，查询缓存有一个需要注意的问题，那就是缓存过期策略，MySQL采用的机制是，当一个数据表有更新操作（比如<code>update</code>或者<code>insert</code>）后，那么涉及这个表的所有查询缓存都会失效。这的确令人比较沮丧，但是MySQL这样做是不希望引入新的开销而自找麻烦，所以“宁可错杀一千，不可放过一个”。这样一来，对于<code>select</code>和<code>update</code>混合的应用来说，查询缓存反而可能会添乱</p>
+<p>关于mysqlreport中查询缓存的报告：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__ Query Cache ______________________________________________________</span><br><span class="line">Memory usage   38.05M of 256.00M  %Used:  14.86</span><br><span class="line">Block Fragmnt   4.29%</span><br><span class="line">Hits           12.74k    33.3/s</span><br><span class="line">Inserts        58.21k   152.4/s</span><br><span class="line">Insrt:Prune  58.21k:1   152.4/s</span><br><span class="line">Hit:Insert     0.22:1</span><br></pre></td></tr></table></figure>
+
+<p>如果你的应用中对于密集<code>select</code>的数据表很少更新，很适合于使用查询缓存。</p>
+<h3 id="临时表"><a href="#临时表" class="headerlink" title="临时表"></a>临时表</h3><p>我们或许看到一些<code>explain</code>查询在分析时出现Using temporary的状态，这意味着查询过程中需要创建临时表来存储中间数据，我们需要通过合理的索引来避免它。另一方面，当临时表在所难免时，我们也要尽量减少临时表本身的开销，通过mysqlreport报告中的Created Temp部分，我们可以看到：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">_ Created Temp _____________________________________________________</span><br><span class="line">Disk table    864.89k     2.0/s</span><br><span class="line">Table           7.06M    16.1/s    Size:  32.0M</span><br><span class="line">File            9.22k     0.0/s</span><br></pre></td></tr></table></figure>
+
+<p>MySQL可以将临时表创建在磁盘（Disk table）、内存（Table）以及临时文件（File）中，显然，在磁盘上创建临时表的开销最大，所以我们希望MySQL尽量不要在磁盘上创建临时表。</p>
+<p>在MySQL的配置中，我们可以通过<code>tmp_table_size</code>选项来设置用于存储临时表的内存空间大小，一旦这个空间不够用，MySQL将会启用磁盘来保存临时表，你可以根据mysqlreport的统计尽量给临时表设置较大的内存空间。</p>
+<h3 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h3><p>我们知道，MySQL采用多线程来处理并发的连接，通过mysqlreport中的Threads部分，我们可以看到线程创建的统计结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"> Threads _____________________________________________________</span><br><span class="line">Running             2 of    5</span><br><span class="line">Cached              0 of    0      %Hit:      0</span><br><span class="line">Created         6.15M    43.6/s</span><br><span class="line">Slow                0       0/s</span><br></pre></td></tr></table></figure>
+
+<p>也许你会觉得创建线程的消耗不值一提，但是我们所谓优化都是在你系统繁忙下的救命稻草。</p>
+<p>一个比较好的办法是在应用中尽量使用持久连接，这将在一定程度上减少线程的重复创建。另一方面，从上面的Cached&#x3D;0可以看出，这些线程并没有被复用，我们可以在my.cnf中设置以下选项：<br><code>thread_cache_size = 100</code></p>
+<h3 id="抛弃关系型数据库"><a href="#抛弃关系型数据库" class="headerlink" title="抛弃关系型数据库"></a>抛弃关系型数据库</h3><p>我们应该知道，在关系型数据库里指导我们设计数据库表的时候可以根据范式来设计，我们一般会选择第三范式，简单地说，第三范式要求在一个数据表中，非主键字段之间不能存在依赖关系，这样一来，它可以避免更新异常、插入异常和删除异常，保证关系的一致性，并且减少数据冗余。</p>
+<p>其实我们并不需要去刻意设计，只要你设计表的时候思维正常，大多数时候都是第三范式。</p>
+<p>但是对于某些应用这样做可能会极大降低我们的性能<br>比如对于这样两张表<br>（用户ID，好友ID，好友昵称）<br>（用户ID，用户昵称，用户邮箱，注册时间，联系电话）<br>它们肯定不符合第三范式，因为好友昵称依赖与好友ID，但是这两个很容易是同时取出，而修改好友昵称的机会少得可怜，甚至你的应用可能根本不想支持，这时候抛弃范式来设计就会有着更好的效果。</p>
+<p>还有一个比较经典的例子：<br>社交网站中的好友Feed功能，你一定非常熟悉，当你的好友或者关注的人发生一些事件的时候，你会在自己的空间看到这些动态，看起来很简单的功能，你将如何实现呢？如果在你每次刷新空间的时候都要对每个好友的最新事件进行一番查询，甚至使用可怕而昂贵的join联合查询，当你有500个好友的时候，开销可想而知。这个时候，出于性能的考虑，可以使用反范式化设计，将这些动态为所有关注它的用户保存一份副本，当然，这会带来大量的写开销，但是这些写操作完全可以异步进行，而不影响用户的体验。</p>
+<p>这时候如果使用NOSQL来存储这些冗余的副本可能会给你带来意想不到的性能的提升。</p>
+<p>下面是一些启发性优化策略：<br><a target="_blank" rel="noopener" href="http://coolshell.cn/articles/1846.html">Mysql性能优化20+条经验</a></p>
+<p>最后参考资料：<br>《构建高性能Web站点》，推荐必读书</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2016/02/28/%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E5%AE%9E%E8%B7%B5%EF%BC%88Python%E5%90%91%EF%BC%89/" rel="prev" title="定时任务实践（Python向）">
+                  <i class="fa fa-angle-left"></i> 定时任务实践（Python向）
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2016/03/22/%E5%88%9D%E5%AD%A6Kafka%E2%80%94%E2%80%94Kafka%E5%AE%9E%E4%BE%8B%E5%8F%8A%E5%85%B6%E8%AE%B2%E8%A7%A3/" rel="next" title="初学Kafka——Kafka实例及其讲解">
+                  初学Kafka——Kafka实例及其讲解 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

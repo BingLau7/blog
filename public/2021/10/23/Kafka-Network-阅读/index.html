@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="JavaNio 及 EventLoop">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka-Network-阅读">
+<meta property="og:url" content="http://example.com/2021/10/23/Kafka-Network-%E9%98%85%E8%AF%BB/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="JavaNio 及 EventLoop">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/images/kafka_network/image_1.png">
+<meta property="og:image" content="http://example.com/images/kafka_network/image_2.png">
+<meta property="og:image" content="http://example.com/images/kafka_network/image_3.png">
+<meta property="og:image" content="http://example.com/images/kafka_network/image_4.png">
+<meta property="og:image" content="http://example.com/images/kafka_network/image_5.png">
+<meta property="article:published_time" content="2021-10-23T07:45:04.000Z">
+<meta property="article:modified_time" content="2023-12-23T11:55:15.428Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="Kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/kafka_network/image_1.png">
+
+
+<link rel="canonical" href="http://example.com/2021/10/23/Kafka-Network-%E9%98%85%E8%AF%BB/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2021/10/23/Kafka-Network-%E9%98%85%E8%AF%BB/","path":"2021/10/23/Kafka-Network-阅读/","title":"Kafka-Network-阅读"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Kafka-Network-阅读 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#JavaNio-%E5%8F%8A-EventLoop"><span class="nav-number">1.</span> <span class="nav-text">JavaNio 及 EventLoop</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SimpleExample"><span class="nav-number">1.1.</span> <span class="nav-text">SimpleExample</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka-%E4%B8%AD-NetworkClient-%E5%AF%B9%E4%BA%8E-JavaNio-%E7%9A%84%E5%B0%81%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">Kafka 中 NetworkClient 对于 JavaNio 的封装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka-%E4%B8%AD-NetworkClient-%E6%98%AF%E5%A6%82%E4%BD%95%E5%8F%91%E9%80%81%E6%95%B0%E6%8D%AE%E7%9A%84%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">Kafka 中 NetworkClient 是如何发送数据的？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Ready"><span class="nav-number">3.1.</span> <span class="nav-text">Ready</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Send"><span class="nav-number">3.2.</span> <span class="nav-text">Send</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Poll"><span class="nav-number">3.3.</span> <span class="nav-text">Poll</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/10/23/Kafka-Network-%E9%98%85%E8%AF%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Kafka-Network-阅读 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kafka-Network-阅读
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-10-23 15:45:04" itemprop="dateCreated datePublished" datetime="2021-10-23T15:45:04+08:00">2021-10-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 19:55:15" itemprop="dateModified" datetime="2023-12-23T19:55:15+08:00">2023-12-23</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="JavaNio-及-EventLoop"><a href="#JavaNio-及-EventLoop" class="headerlink" title="JavaNio 及 EventLoop"></a>JavaNio 及 EventLoop</h2><p><img src="/images/kafka_network/image_1.png" alt="单个线程监听多个网络事件" title="单个线程监听多个网络事件"></p>
+<span id="more"></span>
+
+<p>在 Java NIO 中最为重要的三个概念</p>
+<ul>
+<li>Selector：用于管理多个 Channel（通过 <code>register</code> 方法来注册 <code>event</code>来实现）。主要方法<ul>
+<li><code>open</code>：static 构建函数，构建一个 <code>Selector</code>，用于屏蔽操作系统实现细节。</li>
+<li><code>SelectableChannel#register(Channel, ops)</code>：将 <code>Channel</code> 注册到 <code>Selector</code>中，并返回 <code>SelectionKey</code>作为标识</li>
+<li><code>selectedKeys()</code>：给到所有注册过的 <code>Channel</code> 的 <code>SelectionKey</code></li>
+<li><code>select(timeout) 与 selectNow()</code>：block 请求，返回已经 ready 的事件数量</li>
+<li><code>wakeup()</code>：唤醒被 <code>select</code> 阻塞的线程</li>
+</ul>
+</li>
+<li>Channel：对于 IO 的抽象，包括 <code>FileChannel</code>、<code>ServerSocketChannel</code>、<code>SocketChannel</code><ul>
+<li><code>read(Buffer)</code>：使用 <code>Buffer</code>读取<code>Channel</code>的数据</li>
+<li><code>write(Buffer)</code>：将 <code>Buffer</code> 的数据写入到 <code>Channel</code>中</li>
+</ul>
+</li>
+<li>Buffer：用于与 <code>Channel</code>读写交互数据使用</li>
+</ul>
+<p><img src="/images/kafka_network/image_2.png" alt="read 与 write 的 pos / limit / cap 关系" title="read 与 write 的 pos / limit / cap 关系"></p>
+<h3 id="SimpleExample"><a href="#SimpleExample" class="headerlink" title="SimpleExample"></a>SimpleExample</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">closeDemo</span> <span class="operator">=</span> <span class="string">&quot;close demo&quot;</span>;</span><br><span class="line">    <span class="type">Selector</span> <span class="variable">selector</span> <span class="operator">=</span> Selector.open();</span><br><span class="line">    <span class="type">ServerSocketChannel</span> <span class="variable">serverSocket</span> <span class="operator">=</span> ServerSocketChannel.open();</span><br><span class="line">    serverSocket.bind(<span class="keyword">new</span> <span class="title class_">InetSocketAddress</span>(<span class="string">&quot;localhost&quot;</span>, <span class="number">5454</span>));</span><br><span class="line">    serverSocket.configureBlocking(<span class="literal">false</span>);</span><br><span class="line">    serverSocket.register(selector, SelectionKey.OP_ACCEPT);</span><br><span class="line">    <span class="type">ByteBuffer</span> <span class="variable">buffer</span> <span class="operator">=</span> ByteBuffer.allocate(<span class="number">256</span>);</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        selector.select();</span><br><span class="line">        Set&lt;SelectionKey&gt; selectedKeys = selector.selectedKeys();</span><br><span class="line">        Iterator&lt;SelectionKey&gt; iter = selectedKeys.iterator();</span><br><span class="line">        <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">            <span class="type">SelectionKey</span> <span class="variable">key</span> <span class="operator">=</span> iter.next();</span><br><span class="line">            <span class="type">int</span> <span class="variable">interestOps</span> <span class="operator">=</span> key.interestOps();</span><br><span class="line">            System.out.println(interestOps);</span><br><span class="line">            <span class="keyword">if</span> (key.isAcceptable()) &#123;</span><br><span class="line">                <span class="type">SocketChannel</span> <span class="variable">client</span> <span class="operator">=</span> serverSocket.accept();</span><br><span class="line">                client.configureBlocking(<span class="literal">false</span>);</span><br><span class="line">                client.register(selector, SelectionKey.OP_READ);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (key.isReadable()) &#123;</span><br><span class="line">                <span class="type">SocketChannel</span> <span class="variable">client</span> <span class="operator">=</span> (SocketChannel) key.channel();</span><br><span class="line">                client.read(buffer);</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">new</span> <span class="title class_">String</span>(buffer.array()).trim().equals(closeDemo)) &#123;</span><br><span class="line">                    client.close();</span><br><span class="line">                    System.out.println(<span class="string">&quot;Not accepting client messages anymore&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                buffer.flip();</span><br><span class="line">                client.write(buffer);</span><br><span class="line">                buffer.clear();</span><br><span class="line">            &#125;</span><br><span class="line">            iter.remove();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Kafka-中-NetworkClient-对于-JavaNio-的封装"><a href="#Kafka-中-NetworkClient-对于-JavaNio-的封装" class="headerlink" title="Kafka 中 NetworkClient 对于 JavaNio 的封装"></a>Kafka 中 NetworkClient 对于 JavaNio 的封装</h2><p>其中也有对应的 <code>Selector</code>、<code>KafkaChannel</code> 但是还多出了 <code>TransportLayer</code> 接口。</p>
+<ol>
+<li><code>Selector</code> 中的 <code>connect</code>方法会将每个 <code>node</code> 都关联一个 <code>KafkaChannel</code>到一个 <code>SocketChannel</code> 然后包装成 <code>TrnsportLayer</code> 并注册到 <code>nioSelector</code> 中</li>
+<li><code>KafkaChannel</code> 用来持有 <code>TransportLayer</code>即 <code>SocketChannel</code> </li>
+<li><code>TransportLayer</code> 是在传输协议上的封装，主要是为了鉴权使用。</li>
+</ol>
+<h2 id="Kafka-中-NetworkClient-是如何发送数据的？"><a href="#Kafka-中-NetworkClient-是如何发送数据的？" class="headerlink" title="Kafka 中 NetworkClient 是如何发送数据的？"></a>Kafka 中 NetworkClient 是如何发送数据的？</h2><p>在 <code>NetworkClient</code>中对于 <code>Request</code> 的发送主要使用了三个方法</p>
+<ul>
+<li><code>ready</code>用于建立与 node 的连接，创建一个 <code>KafkaChannel</code></li>
+<li><code>send</code>用于将 data 数据缓存到 <code>KafkaChannel</code> 中，并将 <code>SocketChannel</code>的 ops 增加为 <code>WRITE</code></li>
+<li><code>poll</code>的方法就比较复杂<ul>
+<li>先读：读 <code>KafkaChannel</code>中等待读的数据，将其缓存到 <code>Selector</code>中的 <code>completedReceives </code>数据结构中</li>
+<li>再写：将 <code>KafkaChannel</code>中缓存的数据写入到网络中，然后将写入成功的数据放入 <code>completedSends </code> 数据结构中</li>
+<li>处理等待的请求，如果已经成功收到 broker 的返回结果对请求发起回调（如果存在）</li>
+</ul>
+</li>
+</ul>
+<h3 id="Ready"><a href="#Ready" class="headerlink" title="Ready"></a>Ready</h3><p><img src="/images/kafka_network/image_3.png" alt="image.png"></p>
+<ol>
+<li>当 <code>Sender</code>调用 <code>ready</code>的时候如果对应 node 没有与 client 建立连接，则会通过 <code>NetworkClient#initiateConnect </code>方法建连.</li>
+<li>其中建连最为重要的则是 <code>Selector#connect</code> 方法会新建一个 <code>OPEN</code> 的 <code>SocketChannel(JDK)</code> 并通过该 <code>SocketChannel</code>与 <code>node</code>的 <code>address</code> 建连。</li>
+<li>在建连之后会将该 <code>SocketChannel</code>注册到 <code>Selector</code>对应的 <code>NioSelector(JDK)</code>中并得到一个 <code>SelectionKey</code>，这时候会创建一个 <code>KafkaChannel</code>（<code>Selector#registerChannel</code>） ，让 <code>SelectionKey</code> attach 该 <code>KafkaChannel</code>，这样方便在存在 IO 通知的时候获取对应节点的 <code>KafkaChannel</code>，每个 <code>node</code>都将拥有一个 <code>KafkaChannel</code>用于管理网络事件。</li>
+<li><code>TransportLayer</code> 主要是处理 auth 之间的差异，同时提供了方法用来包装 <code>SocketChannel</code> 以提供给 <code>KafkaChannel</code>使用</li>
+</ol>
+<h3 id="Send"><a href="#Send" class="headerlink" title="Send"></a>Send</h3><p>需要注意，在 <code>RequestBuilder</code> 组成 <code>ClientRequest</code>之后会生成 <code>Send</code>接口，这个 <code>Send</code> 可以简单理解为对于要发送 <code>bytes</code> 的一个反向依赖。<br>同时在 <code>NetworkClient#send</code> 方法中会将 <code>ClientRequest</code>加入到 <code>inFlightRequests</code>中<br><img src="/images/kafka_network/image_4.png" alt="image.png"><br>在 <code>NetworkClient</code>中将要发送的请求 <code>Send</code>set 到 <code>KafkaChannel</code>的成员变量中，然后通过 <code>TransportLayer</code>将对应 node 的 <code>SocketChannel</code> 设置为 <code>OPEN_WRITE</code></p>
+<h3 id="Poll"><a href="#Poll" class="headerlink" title="Poll"></a>Poll</h3><p><img src="/images/kafka_network/image_5.png" alt="image.png"></p>
+<ol>
+<li>在调用 <code>poll</code>之后会直接调用 <code>Selector#poll</code> 然后通过 <code>nioSelector#select</code> 获取所有已经准备就绪的 <code>KafkaChannel</code></li>
+<li>针对每个 <code>KafkaChannel</code>会走一段鉴权逻辑，如果鉴权已经通过 <code>KafkaChannel#ready()</code> 方法会返回 <code>true</code></li>
+<li>此时会尝试先读，如果 <code>Channel</code> 的状态是 <code>isReadable </code>则调用 <code>attemptRead</code> 方法将得到的数据 通过 <code>NetworkReceived</code> 存入 <code>Channel</code> 中</li>
+<li>然后尝试写，如果 <code>Channel</code>的状态是 <code>isWritable</code>则会将数据通过 <code>TransportLayer </code>写入到 <code>SocketChannel</code>中</li>
+<li>最后在 <code>NetworkClient</code>中调用 <code>handlerXXX</code> 方法处理各种从网络中得到的请求，对于请求完成的（读到 response）调用回调。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kafka/" rel="tag"># Kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/01/13/Netty%E8%A7%A3%E6%9E%90-Echo%E7%9A%84bind-connect/" rel="prev" title="Netty解析-Echo的bind&connect">
+                  <i class="fa fa-angle-left"></i> Netty解析-Echo的bind&connect
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/12/03/%E4%BB%8EProducer%E5%88%B0%E6%97%A5%E5%BF%97%E8%90%BD%E7%9B%98/" rel="next" title="从Producer到日志落盘">
+                  从Producer到日志落盘 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

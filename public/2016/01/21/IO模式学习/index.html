@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="问题 同步与异步，阻塞与非阻塞有什么区别，举例说明 什么是多路复用  问题引入这是我们通常所写的程序 1234567891011121314151617181920212223def normal():    for i in range(10):        print(i)if __name__ &#x3D;&#x3D; &amp;#x27;__main__&amp;#x27;:    print(&amp;#x27;begin&amp;#x">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IO模式学习">
+<meta property="og:url" content="http://example.com/2016/01/21/IO%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="问题 同步与异步，阻塞与非阻塞有什么区别，举例说明 什么是多路复用  问题引入这是我们通常所写的程序 1234567891011121314151617181920212223def normal():    for i in range(10):        print(i)if __name__ &#x3D;&#x3D; &amp;#x27;__main__&amp;#x27;:    print(&amp;#x27;begin&amp;#x">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/uploads/blog_img/IO_modal.jpg">
+<meta property="article:published_time" content="2016-01-21T07:07:41.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.751Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="IO">
+<meta property="article:tag" content="异步编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/uploads/blog_img/IO_modal.jpg">
+
+
+<link rel="canonical" href="http://example.com/2016/01/21/IO%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2016/01/21/IO%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/","path":"2016/01/21/IO模式学习/","title":"IO模式学习"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>IO模式学习 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%BC%95%E5%85%A5"><span class="nav-number">2.</span> <span class="nav-text">问题引入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E4%B8%8B%E5%B8%B8%E8%A7%81IO%E6%A8%A1%E5%BC%8F%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text">Linux下常见IO模式介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">Python的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Python%E9%9D%9E%E9%98%BB%E5%A1%9EIO"><span class="nav-number">4.1.</span> <span class="nav-text">Python非阻塞IO</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Python%E7%9A%84%E5%BC%82%E6%AD%A5IO"><span class="nav-number">4.2.</span> <span class="nav-text">Python的异步IO</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%9D%E8%AF%95%E5%9B%9E%E7%AD%94"><span class="nav-number">5.</span> <span class="nav-text">尝试回答</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">6.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/01/21/IO%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="IO模式学习 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          IO模式学习
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-01-21 15:07:41" itemprop="dateCreated datePublished" datetime="2016-01-21T15:07:41+08:00">2016-01-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%9F%BA%E7%A1%80%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">基础原理</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><ol>
+<li>同步与异步，阻塞与非阻塞有什么区别，举例说明</li>
+<li>什么是多路复用</li>
+</ol>
+<h3 id="问题引入"><a href="#问题引入" class="headerlink" title="问题引入"></a>问题引入</h3><p>这是我们通常所写的程序</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">def normal():</span><br><span class="line">    for i in range(10):</span><br><span class="line">        print(i)</span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    print(&#x27;begin&#x27;)</span><br><span class="line">    normal()</span><br><span class="line">    print(&#x27;end&#x27;)</span><br><span class="line"></span><br><span class="line">#result</span><br><span class="line">begin</span><br><span class="line">0</span><br><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">end</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>通常我们的输入需要等到上条输入结束之后才能进行，这也许是我们通常最想要得到的结果，但是有某些时候如果我们所需要的结果没有前后文影响的情况下，我们可能更希望它不是这么死板地来执行的，而是异步执行，最典型的一个例子就是访问网站，网站在进行渲染的时候用到了大量的IO操作，而其他用户不可能等到一个用户渲染完之后在进行渲染，否则会造成比较差的用户体验。</p>
+<p>事实上，所有的IO操作（如数据库查询，读写文件等）都回造成阻塞，它们都会让我们无法利用到IO执行这一期间的计算机资源。</p>
+<p>为了解决这个问题，计算机引入了一些<strong>IO模式</strong>的区别。</p>
+<span id="more"></span>
+
+<h3 id="Linux下常见IO模式介绍"><a href="#Linux下常见IO模式介绍" class="headerlink" title="Linux下常见IO模式介绍"></a>Linux下常见IO模式介绍</h3><p>首先是同步IO与异步IO介绍：</p>
+<p><strong>同步I&#x2F;O操作</strong>：实际的I&#x2F;O操作将导致请求进程阻塞，直到I&#x2F;O操作完成。</p>
+<p>**异步I&#x2F;O操作(AIO)**：实际的I&#x2F;O操作不导致请求进程阻塞。</p>
+<p>接下来是Linux中常见的IO模式介绍：</p>
+<ol>
+<li><strong>阻塞式I&#x2F;O：</strong>应用进程调用I&#x2F;O操作时阻塞，只有等待要操作的数据准备好，并复制到应用进程的缓冲区中才返回。</li>
+<li><strong>非阻塞式I&#x2F;O：</strong>当应用进程要调用的I&#x2F;O操作会导致该进程进入阻塞状态时，该I&#x2F;O调用返回一个错误，一般情况下，应用进程需要利用轮询的方式来检测某个操作是否就绪。数据就绪后，实际的I&#x2F;O操作会等待数据复制到应用进程的缓冲区中以后才返回。</li>
+<li><strong>I&#x2F;O多路复用：</strong>阻塞发生在select&#x2F;poll的系统调用上，而不是阻塞在实际的I&#x2F;O系统调用上。select&#x2F;poll发现有数据就绪后，通过实际的I&#x2F;O操作将数据复制到应用进程的缓冲区中。</li>
+<li><strong>异步I&#x2F;O：</strong>应用进程通知内核开始一个异步I&#x2F;O操作，并让内核在整个操作（包含将数据从内核复制到应该进程的缓冲区）完成后通知应用进程。</li>
+</ol>
+<p>如图所示：<br><img src="/uploads/blog_img/IO_modal.jpg" alt="IO模式"></p>
+<p>从上面图中可以看出，该图把I&#x2F;O操作分为两个阶段，第一阶段等待数据可用，第二阶段将数据从内核复制到用户空间。前三种模型的区别在于第一阶段（阻塞式I&#x2F;O阻塞在I&#x2F;O操作上，非阻塞式I&#x2F;O轮询，I&#x2F;O复用阻塞在select&#x2F;poll或者epoll上），第二阶段都是一样的，即这里的阻塞不阻塞体现在第一阶段，从这方面来说I&#x2F;O复用类型也可以归类到阻塞式I&#x2F;O，它与阻塞式I&#x2F;O的区别在于阻塞的系统调用不同。而异步I&#x2F;O的两个阶段都不会阻塞进程。</p>
+<p>可以看出，I&#x2F;O模式中1，2，3都属于同步IO的操作，因为其在等待数据的时候都有I&#x2F;O操作完成之前都会被阻塞。而只有4属于异步IO操作(AIO)。</p>
+<p>在Linux下有两种称为AIO的的接口。一个是由glibc提供，是由多线程来模拟：数据等待和数据复制的工作，由glibc创建线程来完成。数据复制完成后，执行I&#x2F;O操作的线程通过回调函数的方式通知应用线程（严格来讲，这种方式不能算真正的AIO，因为用来执行实际I&#x2F;O操作的线程还是阻塞在I&#x2F;O操作上，只不过从应用进程的角度来看是异步方式的）。另一种是由内核提供的Kernel AIO，可以做到真正的内核异步通知（这种方式对读写方式，写入大小及偏移都有严格的要求），并且不支持网络I&#x2F;O，其实现原理本质上与下面要介绍的IOCP类似。</p>
+<p>还有一种称为IOCP（Input&#x2F;Output Completion Port）的AIO。从实现原理上讲，IOCP做完I&#x2F;O操作后，将结果封装成完成包（completion packet）入队到完成端口的队列（FIFO）中去，应用线程从队列中读取到完成消息后，处理后续逻辑。从这方面来讲，IOCP类似生产者-消费者模型：生产者为内核，收到应用线程的I&#x2F;O请求后，等待数据可用，并将结果数据复制到应用线程指定的缓冲区中后，然后入队一个完成消息；消费者为应用线程，一开始向内核提交I&#x2F;O请求，并在队列上等待内核的完成消息（只不过，IOCP对同时可运行的消费者有限制），收到完成消息后，进行后续处理。</p>
+<h3 id="Python的实现"><a href="#Python的实现" class="headerlink" title="Python的实现"></a>Python的实现</h3><h4 id="Python非阻塞IO"><a href="#Python非阻塞IO" class="headerlink" title="Python非阻塞IO"></a>Python非阻塞IO</h4><p>介绍<code>Select</code>模块：该模块可以访问大多数操作系统中的<code>select()</code>和<code>poll()</code>函数， Linux2.5+支持的epoll()和大多数BSD支持的kqueue()。</p>
+<p><code>select()</code>方法：该方法监听多个文件描述符的数组，当其返回的时候，系统内核就会将数组中已经就绪的文件描述符修改其标志位，使得进程可以获得这些文件描述符并进行相应的操作。注意，改方法在单个进程内监听的文件描述符数量存在限制，在Linux下一般是1024。</p>
+<p><code>poll()</code>方法：与<code>select()</code>几乎一样，但是不存在数量上的限制。</p>
+<p><code>poll</code>和<code>select</code>同样存在一个缺点就是，包含大量文件描述符的数组被整体复制于用户态和内核的地址空间之间，而不论这些文件描述符是否就绪，它的开销随着文件描述符数量的增加而线性增大。另外，<code>select()</code>和<code>poll()</code>将就绪的文件描述符告诉进程后，如果进程没有对其进行IO操作，那么下次调用<code>select()</code>和<code>poll()</code>的时候 将再次报告这些文件描述符，所以它们一般不会丢失就绪的消息，这种方式称为水平触发（Level Triggered）。不过<code>poll</code>并不适用于windows平台。</p>
+<p>Python中的<code>select</code>模块以列表形式接受四个参数，分别是需要监控的可读文件对象，可写文件对象，产生异常的文件对象和超时设置(可省略)，当监控的对象发生变化时，select会返回发生变化的对象列表。</p>
+<p>以下是<code>select.select()</code>的官方文档:</p>
+<blockquote>
+<p><code>select.select(rlist, wlist, xlist[, timeout])</code><br>This is a straightforward interface to the Unix select() system call. The first three arguments are sequences of ‘waitable objects’: either integers representing file descriptors or objects with a parameterless method named fileno() returning such an integer:  </p>
+<br />
+`rlist`: wait until ready for reading  
+`wlist`: wait until ready for writing  
+`xlist`: wait for an “exceptional condition” (see the manual page for what your system considers such a condition)  
+<br />
+Empty sequences are allowed, but acceptance of three empty sequences is platform-dependent. (It is known to work on Unix but not on Windows.) The optional timeout argument specifies a time-out as a floating point number in seconds. When the timeout argument is omitted the function blocks until at least one file descriptor is ready. A time-out value of zero specifies a poll and never blocks.  
+<br />
+
+<p>The return value is a triple of lists of objects that are ready: subsets of the first three arguments. When the time-out is reached without a file descriptor becoming ready, three empty lists are returned.<br><br /></p>
+<p>Among the acceptable object types in the sequences are Python file objects (e.g. sys.stdin, or objects returned by open() or os.popen()), socket objects returned by socket.socket(). You may also define a wrapper class yourself, as long as it has an appropriate fileno() method (that really returns a file descriptor, not just a random integer).</p>
+</blockquote>
+<p>我们此处使用网上得到的一个聊天室来讲解：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/env python</span><br><span class="line">#encoding:utf-8</span><br><span class="line">import socket</span><br><span class="line">import select</span><br><span class="line">import sys</span><br><span class="line">import signal</span><br><span class="line">class ChatServer():</span><br><span class="line">  def __init__(self,host,port,timeout=10,backlog=5):</span><br><span class="line">    #记录连接的客户端数量</span><br><span class="line">    self.clients = 0</span><br><span class="line">    #存储连接的客户端socket和地址对应的字典</span><br><span class="line">    self.clientmap = &#123;&#125;</span><br><span class="line">    #存储连接的客户端socket</span><br><span class="line">    self.outputs = []</span><br><span class="line">    #建立socket</span><br><span class="line">    self.server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">    self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)</span><br><span class="line">    self.server.bind((host, port))</span><br><span class="line">    self.server.listen(backlog)</span><br><span class="line">    #增加信号处理</span><br><span class="line">    signal.signal(signal.SIGINT, self.sighandler)</span><br><span class="line"></span><br><span class="line">  def sighandler(self):</span><br><span class="line">    sys.stdout.write(&quot;Shutdown Server......\n&quot;)</span><br><span class="line">    #向已经连接客户端发送关系信息，并主动关闭socket</span><br><span class="line">    for output in self.outputs:</span><br><span class="line">      output.send(&quot;Shutdown Server&quot;)</span><br><span class="line">      output.close()</span><br><span class="line">    #关闭listen</span><br><span class="line">    self.server.close()</span><br><span class="line">    sys.stdout.flush()</span><br><span class="line"></span><br><span class="line">  #主函数，用来启动服务器</span><br><span class="line">  def run(self):</span><br><span class="line"></span><br><span class="line">    #需要监听的可读对象</span><br><span class="line">    inputs = [self.server]</span><br><span class="line"></span><br><span class="line">    runing = True</span><br><span class="line">    #添加监听主循环</span><br><span class="line">    while runing:</span><br><span class="line">      try:</span><br><span class="line">         #此处会被select模块阻塞，只有当监听的三个参数发生变化时，select才会返回</span><br><span class="line">        readable, writeable, exceptional = select.select(inputs, self.outputs, [])</span><br><span class="line">      except select.error,e:</span><br><span class="line">        break</span><br><span class="line">      #当返回的readable中含有本地socket的信息时，表示有客户端正在请求连接</span><br><span class="line">      if self.server in readable:</span><br><span class="line">        #接受客户端连接请求</span><br><span class="line">        client,addr=self.server.accept()</span><br><span class="line">        sys.stdout.write(&quot;New Connection from %s\n&quot;%str(addr))</span><br><span class="line">        sys.stdout.flush()</span><br><span class="line">        #更新服务器上客户端连接情况</span><br><span class="line">        #1，数量加1</span><br><span class="line">        #2，self.outputs增加一列</span><br><span class="line">        #3，self.clientmap增加一对</span><br><span class="line">        #4, 给input添加可读监控</span><br><span class="line">        self.clients += 1</span><br><span class="line">        #添加写入对象</span><br><span class="line">        self.outputs.append(client)</span><br><span class="line">        self.clientmap[client] = addr</span><br><span class="line">        inputs.append(client)</span><br><span class="line"></span><br><span class="line">      #readable中含有已经添加的客户端socket，并且可读</span><br><span class="line">      #说明 1,客户端有数据发送过来或者 2,客户端请求关闭</span><br><span class="line">      elif len(readable) != 0:</span><br><span class="line">        #1, 取出这个列表中的socket</span><br><span class="line">        csock = readable[0]</span><br><span class="line">        #2, 根据这个socket，在事先存放的clientmap中，去除客户端的地址，端口的详细信息</span><br><span class="line">        host,port = self.clientmap[csock]</span><br><span class="line">        #3,取数据, 或接受关闭请求，并处理</span><br><span class="line">        #注意，这个操作是阻塞的，但是由于数据是在本地缓存之后，所以速度会非常快</span><br><span class="line">        try:</span><br><span class="line">          data = csock.recv(1024).strip()</span><br><span class="line">          for cs in self.outputs:</span><br><span class="line">            if cs != csock:</span><br><span class="line">              cs.send(&quot;%s\n&quot;%data)</span><br><span class="line">        except socket.error,e:</span><br><span class="line">          self.clients -= 1</span><br><span class="line">          inputs.remove(csock)</span><br><span class="line">          self.outputs.remove(csock)</span><br><span class="line">          del self.clientmap[csock]</span><br><span class="line">      #print self.outputs</span><br><span class="line">    self.server.close()</span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">  chat=ChatServer(&quot;&quot;,8008)</span><br><span class="line">  chat.run()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>可以看出这里<code>select.select()</code>所选择的对象均是通道, 此时多个客户端可以同时进行通话，而不需要等待其他客户端。这里实验客户端可以使用<code>telnet</code>来进行操作</p>
+<h4 id="Python的异步IO"><a href="#Python的异步IO" class="headerlink" title="Python的异步IO"></a>Python的异步IO</h4><p>Python 3.4标准库有一个新模块<code>asyncio</code>，用来支持异步I&#x2F;O。</p>
+<p><code>asyncio</code>的编程模型就是一个消息循环。我们从<code>asyncio</code>模块中直接获取一个<code>EventLoop</code>的引用，然后把需要执行的协程扔到<code>EventLoop</code>中执行，就实现了异步IO。</p>
+<p>实例：  </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">import threading</span><br><span class="line">import asyncio</span><br><span class="line"></span><br><span class="line">@asyncio.coroutine</span><br><span class="line">def hello():</span><br><span class="line">    print(&#x27;Hello world! (%s)&#x27; % threading.currentThread())</span><br><span class="line">    yield from asyncio.sleep(1)</span><br><span class="line">    print(&#x27;Hello again! (%s)&#x27; % threading.currentThread())</span><br><span class="line"></span><br><span class="line">loop = asyncio.get_event_loop()</span><br><span class="line">tasks = [hello(), hello()]</span><br><span class="line">loop.run_until_complete(asyncio.wait(tasks))</span><br><span class="line">loop.close()</span><br><span class="line"></span><br><span class="line">#Result:</span><br><span class="line">Hello world! (&lt;_MainThread(MainThread, started 140735195337472)&gt;)</span><br><span class="line">Hello world! (&lt;_MainThread(MainThread, started 140735195337472)&gt;)</span><br><span class="line">(暂停约1秒)</span><br><span class="line">Hello again! (&lt;_MainThread(MainThread, started 140735195337472)&gt;)</span><br><span class="line">Hello again! (&lt;_MainThread(MainThread, started 140735195337472)&gt;)</span><br></pre></td></tr></table></figure>
+
+<p><code>@asyncio.coroutine</code>把一个<code>generator</code>标记为<code>coroutine</code>类型，然后，我们就把这个<code>coroutine</code>扔到<code>EventLoop</code>中执行。</p>
+<p><code>yield from</code>语法可以让我们方便地调用另一个<code>generator</code>。由于<code>asyncio.sleep()</code>也是一个<code>coroutine</code>，所以线程不会等待<code>asyncio.sleep()</code>，而是直接中断并执行下一个消息循环。当<code>asyncio.sleep()</code>返回时，线程就可以从<code>yield from</code>拿到返回值（此处是<code>None</code>），然后接着执行下一行语句。</p>
+<p>把<code>asyncio.sleep(1)</code>看成是一个耗时1秒的IO操作，在此期间，主线程并未等待，而是去执行<code>EventLoop</code>中其他可以执行的<code>coroutine</code>了，因此可以实现并发执行。</p>
+<p>由打印的当前线程名称可以看出，两个<code>coroutine</code>是由同一个线程并发执行的。</p>
+<p>如果把<code>asyncio.sleep()</code>换成真正的IO操作，则多个<code>coroutine</code>就可以由一个线程并发执行。</p>
+<h3 id="尝试回答"><a href="#尝试回答" class="headerlink" title="尝试回答"></a>尝试回答</h3><ol>
+<li>同步与异步的区别在于请求是否会立即返回，所谓同步非阻塞即是指，若请求无结果，进程不阻塞住，但是依然会隔断时间来观察 I&#x2F;O 操作是否完成，所以本质上，I&#x2F;O 操作依然是同步的。而异步则是调用之后直接返回，由操作系统告知进程 I&#x2F;O 操作是否结束，如信号驱动。</li>
+<li>阻塞于非阻塞关注点在于，程序是否会等待结果返回。</li>
+<li>其实所谓 IO 多路复用，就是事件驱动，操作系统通过 select&#x2F;poll&#x2F;epoll&#x2F;kqueue 等系统调用可检测 socket 描述符是否准备就绪，多个描述符的 I&#x2F;O 操作都能在一个线程内并发交替地顺序完成，这就叫I&#x2F;O多路复用，这里的“复用”指的是复用同一个线程。</li>
+</ol>
+<h3 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h3><p><a target="_blank" rel="noopener" href="http://my.oschina.net/u/1433482/blog/191211">python模块介绍- select 等待I&#x2F;0完成</a><br><a target="_blank" rel="noopener" href="http://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/001432090954004980bd351f2cd4cc18c9e6c06d855c498000">asyncio</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/IO/" rel="tag"># IO</a>
+              <a href="/tags/%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B/" rel="tag"># 异步编程</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2015/12/19/csrf-xsrf-%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E5%AF%B9%E7%AD%96%E7%95%A5/" rel="prev" title="csrf(xsrf)原理与应对策略">
+                  <i class="fa fa-angle-left"></i> csrf(xsrf)原理与应对策略
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2016/02/28/%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E5%AE%9E%E8%B7%B5%EF%BC%88Python%E5%90%91%EF%BC%89/" rel="next" title="定时任务实践（Python向）">
+                  定时任务实践（Python向） <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

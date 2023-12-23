@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="前言：博主在刚接触Python的时候时常听到GIL这个词，并且发现这个词经常和Python无法高效的实现多线程划上等号。本着不光要知其然，还要知其所以然的研究态度，博主搜集了各方面的资料，花了一周内几个小时的闲暇时间深入理解了下GIL，并归纳成此文，也希望读者能通过次本文更好且客观的理解GIL。 文章欢迎转载，但转载时请保留本段文字，并置于文章的顶部作者：卢钧轶(cenalulu)本文原文地址：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【转载】Python的GIL是什么鬼，多线程性能究竟如何">
+<meta property="og:url" content="http://example.com/2015/07/16/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91Python%E7%9A%84GIL%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%A7%E8%83%BD%E7%A9%B6%E7%AB%9F%E5%A6%82%E4%BD%95/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="前言：博主在刚接触Python的时候时常听到GIL这个词，并且发现这个词经常和Python无法高效的实现多线程划上等号。本着不光要知其然，还要知其所以然的研究态度，博主搜集了各方面的资料，花了一周内几个小时的闲暇时间深入理解了下GIL，并归纳成此文，也希望读者能通过次本文更好且客观的理解GIL。 文章欢迎转载，但转载时请保留本段文字，并置于文章的顶部作者：卢钧轶(cenalulu)本文原文地址：">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/uploads/blog_img/test_result.jpg">
+<meta property="og:image" content="http://example.com/uploads/blog_img/GIL_2cpu.png">
+<meta property="og:image" content="http://example.com/uploads/blog_img/GIL_ioclose.png">
+<meta property="article:published_time" content="2015-07-16T08:24:07.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.760Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="并发编程">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/uploads/blog_img/test_result.jpg">
+
+
+<link rel="canonical" href="http://example.com/2015/07/16/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91Python%E7%9A%84GIL%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%A7%E8%83%BD%E7%A9%B6%E7%AB%9F%E5%A6%82%E4%BD%95/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2015/07/16/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91Python%E7%9A%84GIL%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%A7%E8%83%BD%E7%A9%B6%E7%AB%9F%E5%A6%82%E4%BD%95/","path":"2015/07/16/【转载】Python的GIL是什么鬼，多线程性能究竟如何/","title":"【转载】Python的GIL是什么鬼，多线程性能究竟如何"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>【转载】Python的GIL是什么鬼，多线程性能究竟如何 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#GIL%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.</span> <span class="nav-text">GIL是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E6%9C%89GIL"><span class="nav-number">2.</span> <span class="nav-text">为什么会有GIL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GIL%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">3.</span> <span class="nav-text">GIL的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BD%93%E5%89%8DGIL%E8%AE%BE%E8%AE%A1%E7%9A%84%E7%BC%BA%E9%99%B7"><span class="nav-number">4.</span> <span class="nav-text">当前GIL设计的缺陷</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8Epcode%E6%95%B0%E9%87%8F%E7%9A%84%E8%B0%83%E5%BA%A6%E6%96%B9%E5%BC%8F"><span class="nav-number">4.1.</span> <span class="nav-text">基于pcode数量的调度方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E5%8F%97%E5%88%B0GIL%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">5.</span> <span class="nav-text">如何避免受到GIL的影响</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8multiprocessing%E6%9B%BF%E4%BB%A3Thread"><span class="nav-number">5.1.</span> <span class="nav-text">用multiprocessing替代Thread</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E5%85%B6%E4%BB%96%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.2.</span> <span class="nav-text">用其他解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%80%E4%BB%A5%E6%B2%A1%E6%95%91%E4%BA%86%E4%B9%88%EF%BC%9F"><span class="nav-number">5.3.</span> <span class="nav-text">所以没救了么？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">7.</span> <span class="nav-text">Reference:</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2015/07/16/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91Python%E7%9A%84GIL%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%A7%E8%83%BD%E7%A9%B6%E7%AB%9F%E5%A6%82%E4%BD%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="【转载】Python的GIL是什么鬼，多线程性能究竟如何 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【转载】Python的GIL是什么鬼，多线程性能究竟如何
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2015-07-16 16:24:07" itemprop="dateCreated datePublished" datetime="2015-07-16T16:24:07+08:00">2015-07-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%9F%BA%E7%A1%80%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">基础原理</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>前言：博主在刚接触Python的时候时常听到GIL这个词，并且发现这个词经常和Python无法高效的实现多线程划上等号。本着不光要知其然，还要知其所以然的研究态度，博主搜集了各方面的资料，花了一周内几个小时的闲暇时间深入理解了下GIL，并归纳成此文，也希望读者能通过次本文更好且客观的理解GIL。</p>
+<p>文章欢迎转载，但转载时请保留本段文字，并置于文章的顶部<br>作者：卢钧轶(cenalulu)<br>本文原文地址：<a target="_blank" rel="noopener" href="http://cenalulu.github.io/python/gil-in-python/">http://cenalulu.github.io/python/gil-in-python/</a>  </p>
+</blockquote>
+<h2 id="GIL是什么"><a href="#GIL是什么" class="headerlink" title="GIL是什么"></a>GIL是什么</h2><p>首先需要明确的一点是<code>GIL</code>并不是Python的特性，它是在实现Python解析器(CPython)时所引入的一个概念。就好比C++是一套语言（语法）标准，但是可以用不同的编译器来编译成可执行代码。有名的编译器例如GCC，INTEL C++，Visual C++等。Python也一样，同样一段代码可以通过CPython，PyPy，Psyco等不同的Python执行环境来执行。像其中的JPython就没有<code>GIL</code>。然而因为CPython是大部分环境下默认的Python执行环境。所以在很多人的概念里CPython就是Python，也就想当然的把GIL归结为Python语言的缺陷。所以这里要先明确一点：<code>GIL</code>并不是Python的特性，Python完全可以不依赖于<code>GIL</code></p>
+<p>那么CPython实现中的GIL又是什么呢？<code>GIL</code>全称<code>Global Interpreter Lock</code>为了避免误导，我们还是来看一下官方给出的解释：</p>
+<blockquote>
+<p>In CPython, the global interpreter lock, or GIL, is a mutex that prevents multiple native threads from executing Python bytecodes at once. This lock is necessary mainly because CPython’s memory management is not thread-safe. (However, since the GIL exists, other features have grown to depend on the guarantees that it enforces.)</p>
+</blockquote>
+<p>好吧，是不是看上去很糟糕？一个防止多线程并发执行机器码的一个Mutex，乍一看就是个BUG般存在的全局锁嘛！别急，我们下面慢慢的分析。</p>
+<span id="more"></span>
+<h2 id="为什么会有GIL"><a href="#为什么会有GIL" class="headerlink" title="为什么会有GIL"></a>为什么会有GIL</h2><p>由于物理上得限制，各CPU厂商在核心频率上的比赛已经被多核所取代。为了更有效的利用多核处理器的性能，就出现了多线程的编程方式，而随之带来的就是线程间数据一致性和状态同步的困难。即使在CPU内部的Cache也不例外，为了有效解决多份缓存之间的数据同步时各厂商花费了不少心思，也不可避免的带来了一定的性能损失。</p>
+<p>Python当然也逃不开，为了利用多核，Python开始支持多线程。而解决多线程之间数据完整性和状态同步的最简单方法自然就是加锁。 于是有了GIL这把超级大锁，而当越来越多的代码库开发者接受了这种设定后，他们开始大量依赖这种特性（即默认python内部对象是thread-safe的，无需在实现时考虑额外的内存锁和同步操作）。</p>
+<p>慢慢的这种实现方式被发现是蛋疼且低效的。但当大家试图去拆分和去除GIL的时候，发现大量库代码开发者已经重度依赖GIL而非常难以去除了。有多难？做个类比，像MySQL这样的“小项目”为了把Buffer Pool Mutex这把大锁拆分成各个小锁也花了从5.5到5.6再到5.7多个大版为期近5年的时间，本且仍在继续。MySQL这个背后有公司支持且有固定开发团队的产品走的如此艰难，那又更何况Python这样核心开发和代码贡献者高度社区化的团队呢？</p>
+<p>所以简单的说GIL的存在更多的是历史原因。如果推到重来，多线程的问题依然还是要面对，但是至少会比目前GIL这种方式会更优雅。</p>
+<h2 id="GIL的影响"><a href="#GIL的影响" class="headerlink" title="GIL的影响"></a>GIL的影响</h2><p>从上文的介绍和官方的定义来看，GIL无疑就是一把全局排他锁。毫无疑问全局锁的存在会对多线程的效率有不小影响。甚至就几乎等于Python是个单线程的程序。</p>
+<p>那么读者就会说了，全局锁只要释放的勤快效率也不会差啊。只要在进行耗时的IO操作的时候，能释放GIL，这样也还是可以提升运行效率的嘛。或者说再差也不会比单线程的效率差吧。理论上是这样，而实际上呢？Python比你想的更糟。</p>
+<p>下面我们就对比下Python在多线程和单线程下得效率对比。测试方法很简单，一个循环1亿次的计数器函数。一个通过单线程执行两次，一个多线程执行。最后比较执行总时间。测试环境为双核的Mac pro。注：为了减少线程库本身性能损耗对测试结果带来的影响，这里单线程的代码同样使用了线程。只是顺序的执行两次，模拟单线程。</p>
+<p><strong>顺序执行的单线程(single_thread.py)</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">#! /usr/bin/python</span><br><span class="line"></span><br><span class="line">from threading import Thread</span><br><span class="line">import time</span><br><span class="line"></span><br><span class="line">def my_counter():</span><br><span class="line">    i = 0</span><br><span class="line">    for _ in range(100000000):</span><br><span class="line">        i = i + 1</span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    thread_array = &#123;&#125;</span><br><span class="line">    start_time = time.time()</span><br><span class="line">    for tid in range(2):</span><br><span class="line">        t = Thread(target=my_counter)</span><br><span class="line">        t.start()</span><br><span class="line">        t.join()</span><br><span class="line">    end_time = time.time()</span><br><span class="line">    print(&quot;Total time: &#123;&#125;&quot;.format(end_time - start_time))</span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p><strong>同时执行的两个并发线程(multi_thread.py)</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">#! /usr/bin/python</span><br><span class="line"></span><br><span class="line">from threading import Thread</span><br><span class="line">import time</span><br><span class="line"></span><br><span class="line">def my_counter():</span><br><span class="line">    i = 0</span><br><span class="line">    for _ in range(100000000):</span><br><span class="line">        i = i + 1</span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    thread_array = &#123;&#125;</span><br><span class="line">    start_time = time.time()</span><br><span class="line">    for tid in range(2):</span><br><span class="line">        t = Thread(target=my_counter)</span><br><span class="line">        t.start()</span><br><span class="line">        thread_array[tid] = t</span><br><span class="line">    for i in range(2):</span><br><span class="line">        thread_array[i].join()</span><br><span class="line">    end_time = time.time()</span><br><span class="line">    print(&quot;Total time: &#123;&#125;&quot;.format(end_time - start_time))</span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p>下图就是测试结果</p>
+<p><img src="/uploads/blog_img/test_result.jpg" alt="测试结果"></p>
+<p>可以看到python在多线程的情况下居然比单线程整整慢了45%。按照之前的分析，即使是有GIL全局锁的存在，串行化的多线程也应该和单线程有一样的效率才对。那么怎么会有这么糟糕的结果呢？</p>
+<p>让我们通过GIL的实现原理来分析这其中的原因。</p>
+<h2 id="当前GIL设计的缺陷"><a href="#当前GIL设计的缺陷" class="headerlink" title="当前GIL设计的缺陷"></a>当前GIL设计的缺陷</h2><h3 id="基于pcode数量的调度方式"><a href="#基于pcode数量的调度方式" class="headerlink" title="基于pcode数量的调度方式"></a>基于pcode数量的调度方式</h3><p>按照Python社区的想法，操作系统本身的线程调度已经非常成熟稳定了，没有必要自己搞一套。所以Python的线程就是C语言的一个pthread，并通过操作系统调度算法进行调度（例如linux是CFS）。为了让各个线程能够平均利用CPU时间，python会计算当前已执行的微代码数量，达到一定阈值后就强制释放GIL。而这时也会触发一次操作系统的线程调度（当然是否真正进行上下文切换由操作系统自主决定）。</p>
+<p>伪代码:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">while True:</span><br><span class="line">    acquire GIL</span><br><span class="line">    for i in 1000:</span><br><span class="line">        do something</span><br><span class="line">    release GIL</span><br><span class="line">    /* Give Operating System a chance to do thread scheduling */</span><br></pre></td></tr></table></figure>
+
+<p>这种模式在只有一个CPU核心的情况下毫无问题。任何一个线程被唤起时都能成功获得到GIL（因为只有释放了GIL才会引发线程调度）。但当CPU有多个核心的时候，问题就来了。从伪代码可以看到，从release GIL到acquire GIL之间几乎是没有间隙的。所以当其他在其他核心上的线程被唤醒时，大部分情况下主线程已经又再一次获取到GIL了。这个时候被唤醒执行的线程只能白白的浪费CPU时间，看着另一个线程拿着GIL欢快的执行着。然后达到切换时间后进入待调度状态，再被唤醒，再等待，以此往复恶性循环。</p>
+<p>PS：当然这种实现方式是原始而丑陋的，Python的每个版本中也在逐渐改进GIL和线程调度之间的互动关系。例如先尝试持有GIL在做线程上下文切换，在IO等待时释放GIL等尝试。但是无法改变的是GIL的存在使得操作系统线程调度的这个本来就昂贵的操作变得更奢侈了。<br><a target="_blank" rel="noopener" href="http://www.dabeaz.com/GIL/">关于GIL影响的扩展阅读</a></p>
+<p>为了直观的理解GIL对于多线程带来的性能影响，这里直接借用的一张测试结果图（见下图）。图中表示的是两个线程在双核CPU上得执行情况。两个线程均为CPU密集型运算线程。绿色部分表示该线程在运行，且在执行有用的计算，红色部分为线程被调度唤醒，但是无法获取GIL导致无法进行有效运算等待的时间。</p>
+<p><img src="/uploads/blog_img/GIL_2cpu.png" alt="GIL_2cpu"></p>
+<p>由图可见，GIL的存在导致多线程无法很好的立即多核CPU的并发处理能力。</p>
+<p>那么Python的IO密集型线程能否从多线程中受益呢？我们来看下面这张测试结果。颜色代表的含义和上图一致。白色部分表示IO线程处于等待。可见，当IO线程收到数据包引起终端切换后，仍然由于一个CPU密集型线程的存在，导致无法获取GIL锁，从而进行无尽的循环等待。</p>
+<p><img src="/uploads/blog_img/GIL_ioclose.png" alt="GIL_ioclose"><br>简单的总结下就是：Python的多线程在多核CPU上，只对于IO密集型计算产生正面效果；而当有至少有一个CPU密集型线程存在，那么多线程效率会由于GIL而大幅下降。</p>
+<h2 id="如何避免受到GIL的影响"><a href="#如何避免受到GIL的影响" class="headerlink" title="如何避免受到GIL的影响"></a>如何避免受到GIL的影响</h2><p>说了那么多，如果不说解决方案就仅仅是个科普帖，然并卵。GIL这么烂，有没有办法绕过呢？我们来看看有哪些现成的方案。</p>
+<h3 id="用multiprocessing替代Thread"><a href="#用multiprocessing替代Thread" class="headerlink" title="用multiprocessing替代Thread"></a>用multiprocessing替代Thread</h3><p>multiprocessing库的出现很大程度上是为了弥补thread库因为GIL而低效的缺陷。它完整的复制了一套thread所提供的接口方便迁移。唯一的不同就是它使用了多进程而不是多线程。每个进程有自己的独立的GIL，因此也不会出现进程之间的GIL争抢。</p>
+<p>当然multiprocessing也不是万能良药。它的引入会增加程序实现时线程间数据通讯和同步的困难。就拿计数器来举例子，如果我们要多个线程累加同一个变量，对于thread来说，申明一个global变量，用thread.Lock的context包裹住三行就搞定了。而multiprocessing由于进程之间无法看到对方的数据，只能通过在主线程申明一个Queue，put再get或者用share memory的方法。这个额外的实现成本使得本来就非常痛苦的多线程程序编码，变得更加痛苦了。具体难点在哪有兴趣的读者可以扩展阅读<a target="_blank" rel="noopener" href="http://www.jeffknupp.com/blog/2013/06/30/pythons-hardest-problem-revisited/">这篇文章</a></p>
+<h3 id="用其他解析器"><a href="#用其他解析器" class="headerlink" title="用其他解析器"></a>用其他解析器</h3><p>之前也提到了既然GIL只是CPython的产物，那么其他解析器是不是更好呢？没错，像JPython和IronPython这样的解析器由于实现语言的特性，他们不需要GIL的帮助。然而由于用了Java&#x2F;C#用于解析器实现，他们也失去了利用社区众多C语言模块有用特性的机会。所以这些解析器也因此一直都比较小众。毕竟功能和性能大家在初期都会选择前者，Done is better than perfect。</p>
+<h3 id="所以没救了么？"><a href="#所以没救了么？" class="headerlink" title="所以没救了么？"></a>所以没救了么？</h3><p>当然Python社区也在非常努力的不断改进GIL，甚至是尝试去除GIL。并在各个小版本中有了不少的进步。有兴趣的读者可以扩展阅读<a target="_blank" rel="noopener" href="http://www.dabeaz.com/python/UnderstandingGIL.pdf">这个Slide</a><br>另一个改进<a target="_blank" rel="noopener" href="https://mail.python.org/pipermail/python-dev/2009-October/093321.html">Reworking the GIL</a></p>
+<ul>
+<li>将切换颗粒度从基于opcode计数改成基于时间片计数</li>
+<li>避免最近一次释放GIL锁的线程再次被立即调度</li>
+<li>新增线程优先级功能（高优先级线程可以迫使其他线程释放所持有的GIL锁）</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Python GIL其实是功能和性能之间权衡后的产物，它尤其存在的合理性，也有较难改变的客观因素。从本分的分析中，我们可以做以下一些简单的总结：</p>
+<ul>
+<li>因为GIL的存在，只有IO Bound场景下得多线程会得到较好的性能</li>
+<li>如果对并行计算性能较高的程序可以考虑把核心部分也成C模块，或者索性用其他语言实现</li>
+<li>GIL在较长一段时间内将会继续存在，但是会不断对其进行改进</li>
+</ul>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference:"></a>Reference:</h2><ul>
+<li><a target="_blank" rel="noopener" href="http://www.jeffknupp.com/blog/2013/06/30/pythons-hardest-problem-revisited/">Python’s hardest problem</a></li>
+<li><a target="_blank" rel="noopener" href="https://wiki.python.org/moin/GlobalInterpreterLock">Official documents about GIL</a></li>
+<li><a target="_blank" rel="noopener" href="http://dabeaz.blogspot.com/2010/02/revisiting-thread-priorities-and-new.html">Revisiting thread priorities and the new GIL</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag"># 并发编程</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2015/07/16/%E3%80%90%E8%BD%AC%E8%BD%BD%E3%80%91Python-%E4%B8%AD%E7%9A%84%E8%BF%9B%E7%A8%8B%E3%80%81%E7%BA%BF%E7%A8%8B%E3%80%81%E5%8D%8F%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5%E3%80%81%E5%BC%82%E6%AD%A5%E3%80%81%E5%9B%9E%E8%B0%83/" rel="prev" title="【转载】Python 中的进程、线程、协程、同步、异步、回调">
+                  <i class="fa fa-angle-left"></i> 【转载】Python 中的进程、线程、协程、同步、异步、回调
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2015/11/09/Tornado%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%E4%B9%8B%E5%90%8E/" rel="next" title="Tornado源码阅读之后">
+                  Tornado源码阅读之后 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

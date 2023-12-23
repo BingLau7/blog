@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="增删查改范例  Restful vs Java API  Java API 说明需要添加依赖： 123456789101112131415&lt;dependency&gt;    &lt;groupId&gt;org.elasticsearch.client&lt;&#x2F;groupId&gt;    &lt;artifactId&gt;transport&lt;&#x2F;artifactId&gt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ElasticSearch基础">
+<meta property="og:url" content="http://example.com/2017/11/23/ElasticSearch%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="增删查改范例  Restful vs Java API  Java API 说明需要添加依赖： 123456789101112131415&lt;dependency&gt;    &lt;groupId&gt;org.elasticsearch.client&lt;&#x2F;groupId&gt;    &lt;artifactId&gt;transport&lt;&#x2F;artifactId&gt;">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-11-23T06:09:33.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.750Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="ElasticSearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2017/11/23/ElasticSearch%E5%9F%BA%E7%A1%80/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2017/11/23/ElasticSearch%E5%9F%BA%E7%A1%80/","path":"2017/11/23/ElasticSearch基础/","title":"ElasticSearch基础"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>ElasticSearch基础 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A2%9E%E5%88%A0%E6%9F%A5%E6%94%B9%E8%8C%83%E4%BE%8B"><span class="nav-number">1.</span> <span class="nav-text">增删查改范例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java-API-%E8%AF%B4%E6%98%8E"><span class="nav-number">1.1.</span> <span class="nav-text">Java API 说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E"><span class="nav-number">1.2.</span> <span class="nav-text">增</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Restful"><span class="nav-number">1.2.1.</span> <span class="nav-text">Restful</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-API"><span class="nav-number">1.2.2.</span> <span class="nav-text">Java API</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5"><span class="nav-number">1.3.</span> <span class="nav-text">查</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Restful-1"><span class="nav-number">1.3.1.</span> <span class="nav-text">Restful</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-API-1"><span class="nav-number">1.3.2.</span> <span class="nav-text">Java API</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-id-%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">通过 id 查询</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-query-%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">通过 query 查询</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9"><span class="nav-number">1.4.</span> <span class="nav-text">改</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Restful-2"><span class="nav-number">1.4.1.</span> <span class="nav-text">Restful</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-API-2"><span class="nav-number">1.4.2.</span> <span class="nav-text">Java API</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0"><span class="nav-number">1.5.</span> <span class="nav-text">删</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Restful-3"><span class="nav-number">1.5.1.</span> <span class="nav-text">Restful</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-API-3"><span class="nav-number">1.5.2.</span> <span class="nav-text">Java API</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%9E%B6%E6%9E%84%E7%9A%84%E4%B8%BB%E8%A6%81%E6%A6%82%E5%BF%B5"><span class="nav-number">2.1.</span> <span class="nav-text">数据架构的主要概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E6%A6%82%E5%BF%B5"><span class="nav-number">2.2.</span> <span class="nav-text">主要概念</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.</span> <span class="nav-text">基本查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%8D%E6%9D%A1%E6%9F%A5%E8%AF%A2%EF%BC%88term%EF%BC%89"><span class="nav-number">3.0.1.</span> <span class="nav-text">词条查询（term）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E8%AF%8D%E6%9D%A1%E6%9F%A5%E8%AF%A2%EF%BC%88terms-tags%EF%BC%89"><span class="nav-number">3.0.2.</span> <span class="nav-text">多词条查询（terms-tags）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8C%B9%E9%85%8D%E6%89%80%E6%9C%89%E6%96%87%E4%BB%B6%EF%BC%88match-all%EF%BC%89"><span class="nav-number">3.0.3.</span> <span class="nav-text">匹配所有文件（match_all）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E8%AF%8D%EF%BC%88common%EF%BC%89"><span class="nav-number">3.0.4.</span> <span class="nav-text">常用词（common）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#match-%E6%9F%A5%E8%AF%A2%EF%BC%88match%EF%BC%89"><span class="nav-number">3.0.5.</span> <span class="nav-text">match 查询（match）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B8%83%E5%B0%94%E5%80%BC"><span class="nav-number">3.0.5.1.</span> <span class="nav-text">布尔值</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#match-phrase"><span class="nav-number">3.0.5.2.</span> <span class="nav-text">match_phrase</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#match-phrase-prefix"><span class="nav-number">3.0.5.3.</span> <span class="nav-text">match_phrase_prefix</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#multi-match"><span class="nav-number">3.0.6.</span> <span class="nav-text">multi_match</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#query-string-%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.7.</span> <span class="nav-text">query_string 查询</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%92%88%E5%AF%B9%E5%A4%9A%E5%AD%97%E6%AE%B5"><span class="nav-number">3.0.7.1.</span> <span class="nav-text">针对多字段</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#simple-query-string-%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.8.</span> <span class="nav-text">simple_query_string 查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%87%E8%AF%86%E7%AC%A6%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.9.</span> <span class="nav-text">标识符查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%89%8D%E7%BC%80%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.10.</span> <span class="nav-text">前缀查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#fuzzy-%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.11.</span> <span class="nav-text">fuzzy 查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E9%85%8D%E7%AC%A6%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.12.</span> <span class="nav-text">通配符查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#more-like-this-%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.13.</span> <span class="nav-text">more_like_this 查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.14.</span> <span class="nav-text">范围查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.0.15.</span> <span class="nav-text">正则表达式查询</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6"><span class="nav-number">4.</span> <span class="nav-text">版本控制</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2017/11/23/ElasticSearch%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="ElasticSearch基础 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ElasticSearch基础
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-11-23 14:09:33" itemprop="dateCreated datePublished" datetime="2017-11-23T14:09:33+08:00">2017-11-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">工具</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="增删查改范例"><a href="#增删查改范例" class="headerlink" title="增删查改范例"></a>增删查改范例</h2><blockquote>
+<p> Restful vs Java API</p>
+</blockquote>
+<h3 id="Java-API-说明"><a href="#Java-API-说明" class="headerlink" title="Java API 说明"></a>Java API 说明</h3><p>需要添加依赖：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.elasticsearch.client<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>transport<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.6.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.logging.log4j<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>log4j-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.9.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.logging.log4j<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>log4j-api<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.9.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>需要获取 client 实例:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Settings</span> <span class="variable">settings</span> <span class="operator">=</span> Settings.EMPTY;</span><br><span class="line"><span class="type">TransportClient</span> <span class="variable">client</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PreBuiltTransportClient</span>(settings)</span><br><span class="line">        .addTransportAddress(<span class="keyword">new</span> <span class="title class_">InetSocketTransportAddress</span>(InetAddress.getLocalHost(), <span class="number">9300</span>));</span><br></pre></td></tr></table></figure>
+
+<h3 id="增"><a href="#增" class="headerlink" title="增"></a>增</h3><h4 id="Restful"><a href="#Restful" class="headerlink" title="Restful"></a>Restful</h4><p><code>curl -XPOST &#39;localhost:9200/books/es/1&#39; -d &#39;&#123;&quot;title&quot;: &quot;Elasticsearch Server&quot;, &quot;published&quot;: 2013&#125;&#39;</code></p>
+<p>返回：</p>
+<p><code>&#123;&quot;_index&quot;:&quot;books&quot;,&quot;_type&quot;:&quot;es&quot;,&quot;_id&quot;:&quot;1&quot;,&quot;_version&quot;:1,&quot;result&quot;:&quot;created&quot;,&quot;_shards&quot;:&#123;&quot;total&quot;:2,&quot;successful&quot;:1,&quot;failed&quot;:0&#125;,&quot;created&quot;:true&#125;</code></p>
+<span id="more"></span>
+
+<h4 id="Java-API"><a href="#Java-API" class="headerlink" title="Java API"></a>Java API</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">        <span class="comment">// add，可以直接使用 json 添加，也可以像下面一样使用</span></span><br><span class="line">        <span class="type">XContentBuilder</span> <span class="variable">builder</span> <span class="operator">=</span> XContentFactory.jsonBuilder().startObject()</span><br><span class="line">                .field(<span class="string">&quot;title&quot;</span>, <span class="string">&quot;Mastering Elasticsearch&quot;</span>).field(<span class="string">&quot;published&quot;</span>, <span class="string">&quot;2013&quot;</span>).endObject();</span><br><span class="line">        <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> builder.string();</span><br><span class="line">        System.out.println(json);</span><br><span class="line">        <span class="comment">// IndexResponse indexResponse = client.prepareIndex(&quot;books&quot;, &quot;es&quot;, &quot;2&quot;)</span></span><br><span class="line">        <span class="comment">// .setSource(json, XContentType.JSON).get();</span></span><br><span class="line">        <span class="type">IndexResponse</span> <span class="variable">indexResponse</span> <span class="operator">=</span> client.prepareIndex(<span class="string">&quot;books&quot;</span>, <span class="string">&quot;es&quot;</span>, <span class="string">&quot;2&quot;</span>)</span><br><span class="line">                .setSource(builder).get();</span><br><span class="line">        System.out.println(indexResponse);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">结果:</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">&#123;&quot;title&quot;:&quot;Mastering Elasticsearch&quot;,&quot;published&quot;:&quot;2013&quot;&#125; // JSON</span></span><br><span class="line"><span class="comment">IndexResponse[index=books,type=es,id=2,version=1,result=created,shards=&#123;&quot;total&quot;:2,&quot;successful&quot;:1,&quot;failed&quot;:0&#125;] // indexResponse</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查"><a href="#查" class="headerlink" title="查"></a>查</h3><h4 id="Restful-1"><a href="#Restful-1" class="headerlink" title="Restful"></a>Restful</h4><p><code>curl -XGET &#39;localhost:9200/books/_search?pretty&#39;</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;took&quot;</span> <span class="punctuation">:</span> <span class="number">41</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;timed_out&quot;</span> <span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;_shards&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;total&quot;</span> <span class="punctuation">:</span> <span class="number">5</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;successful&quot;</span> <span class="punctuation">:</span> <span class="number">5</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;skipped&quot;</span> <span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;failed&quot;</span> <span class="punctuation">:</span> <span class="number">0</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;hits&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;total&quot;</span> <span class="punctuation">:</span> <span class="number">3</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;max_score&quot;</span> <span class="punctuation">:</span> <span class="number">1.0</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;hits&quot;</span> <span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;_index&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;books&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_type&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;es&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_id&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;2&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_score&quot;</span> <span class="punctuation">:</span> <span class="number">1.0</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_source&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;title&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;Mastering Elasticsearch&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;published&quot;</span> <span class="punctuation">:</span> <span class="number">2013</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;_index&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;books&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_type&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;es&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_id&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;1&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_score&quot;</span> <span class="punctuation">:</span> <span class="number">1.0</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_source&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;title&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;Elasticsearch Server&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;published&quot;</span> <span class="punctuation">:</span> <span class="number">2013</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;_index&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;books&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_type&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;solr&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_id&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;1&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_score&quot;</span> <span class="punctuation">:</span> <span class="number">1.0</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_source&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;title&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;Apache Solr 4 Cookbook&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;published&quot;</span> <span class="punctuation">:</span> <span class="number">2012</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>curl -XGET &#39;localhost:9200/books/_search?pretty&amp;q=title:elasticsearch&#39;</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;took&quot;</span> <span class="punctuation">:</span> <span class="number">12</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;timed_out&quot;</span> <span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;_shards&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;total&quot;</span> <span class="punctuation">:</span> <span class="number">5</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;successful&quot;</span> <span class="punctuation">:</span> <span class="number">5</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;skipped&quot;</span> <span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;failed&quot;</span> <span class="punctuation">:</span> <span class="number">0</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;hits&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;total&quot;</span> <span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;max_score&quot;</span> <span class="punctuation">:</span> <span class="number">0.7373906</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;hits&quot;</span> <span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;_index&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;books&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_type&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;es&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_id&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;1&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_score&quot;</span> <span class="punctuation">:</span> <span class="number">0.7373906</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_source&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;title&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;Elasticsearch Server&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;published&quot;</span> <span class="punctuation">:</span> <span class="number">2013</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;_index&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;books&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_type&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;es&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_id&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;2&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_score&quot;</span> <span class="punctuation">:</span> <span class="number">0.25811607</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;_source&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">          <span class="attr">&quot;title&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;Mastering Elasticsearch&quot;</span><span class="punctuation">,</span></span><br><span class="line">          <span class="attr">&quot;published&quot;</span> <span class="punctuation">:</span> <span class="number">2013</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Java-API-1"><a href="#Java-API-1" class="headerlink" title="Java API"></a>Java API</h4><h5 id="通过-id-查询"><a href="#通过-id-查询" class="headerlink" title="通过 id 查询"></a>通过 id 查询</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">        <span class="comment">// get by id</span></span><br><span class="line">        <span class="type">GetResponse</span> <span class="variable">response</span> <span class="operator">=</span> client.prepareGet(<span class="string">&quot;books&quot;</span>, <span class="string">&quot;es&quot;</span>, <span class="string">&quot;2&quot;</span>).get();</span><br><span class="line">        System.out.println(response);</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">结果:</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">&#123;&quot;_index&quot;:&quot;books&quot;,&quot;_type&quot;:&quot;es&quot;,&quot;_id&quot;:&quot;2&quot;,&quot;_version&quot;:1,&quot;found&quot;:true,&quot;_source&quot;:&#123;&quot;title&quot;:&quot;Mastering Elasticsearch&quot;,&quot;published&quot;:&quot;2013&quot;&#125;&#125;</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="通过-query-查询"><a href="#通过-query-查询" class="headerlink" title="通过 query 查询"></a>通过 query 查询</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">        <span class="type">SearchResponse</span> <span class="variable">response</span> <span class="operator">=</span> client.prepareSearch(<span class="string">&quot;books&quot;</span>)</span><br><span class="line">                .setQuery(</span><br><span class="line">                        QueryBuilders.termsQuery(<span class="string">&quot;title&quot;</span>,<span class="string">&quot;elasticsearch&quot;</span>)</span><br><span class="line">                )</span><br><span class="line">                .get();</span><br><span class="line">        System.out.println(response);</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">结果</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">&#123;&quot;took&quot;:11,&quot;timed_out&quot;:false,&quot;_shards&quot;:&#123;&quot;total&quot;:5,&quot;successful&quot;:5,&quot;skipped&quot;:0,&quot;failed&quot;:0&#125;,&quot;hits&quot;:&#123;&quot;total&quot;:2,&quot;max_score&quot;:0.7373906,&quot;hits&quot;:[&#123;&quot;_index&quot;:&quot;books&quot;,&quot;_type&quot;:&quot;es&quot;,&quot;_id&quot;:&quot;1&quot;,&quot;_score&quot;:0.7373906,&quot;_source&quot;:&#123;&quot;title&quot;: &quot;Elasticsearch Server&quot;, &quot;published&quot;: 2013&#125;&#125;,&#123;&quot;_index&quot;:&quot;books&quot;,&quot;_type&quot;:&quot;es&quot;,&quot;_id&quot;:&quot;2&quot;,&quot;_score&quot;:0.25811607,&quot;_source&quot;:&#123;&quot;title&quot;:&quot;Mastering Elasticsearch&quot;,&quot;published&quot;:&quot;2013&quot;&#125;&#125;]&#125;&#125;</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="改"><a href="#改" class="headerlink" title="改"></a>改</h3><h4 id="Restful-2"><a href="#Restful-2" class="headerlink" title="Restful"></a>Restful</h4><p>更新索引中的文档是一项复杂的任务。在内部，ElasticSearch 必须首先后去文档，从 <code>_source</code> 属性获得数据，删除旧的文件，更改 <code>_source</code> 属性，然后把它作为新的文档来索引。它如此复杂，因为信息一旦在 Lucene 的倒排索引中存储，就不能再被更改。</p>
+<p><code>curl -XPOST &#39;localhost:9200/books/es/2/_update&#39; -d &#39;&#123;&quot;script&quot;: &quot;ctx._source.published = \&quot;2017\&quot;&quot; &#125;&#39;</code></p>
+<p><code>&#123;&quot;_index&quot;:&quot;books&quot;,&quot;_type&quot;:&quot;es&quot;,&quot;_id&quot;:&quot;2&quot;,&quot;_version&quot;:2,&quot;result&quot;:&quot;updated&quot;,&quot;_shards&quot;:&#123;&quot;total&quot;:2,&quot;successful&quot;:1,&quot;failed&quot;:0&#125;&#125;</code></p>
+<p>结果验证:</p>
+<p><code>curl -XGET &#39;localhost:9200/books/_search?pretty&amp;q=title:mastering&#39;</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;took&quot;</span> : <span class="number">1</span>,</span><br><span class="line">  <span class="string">&quot;timed_out&quot;</span> : <span class="literal">false</span>,</span><br><span class="line">  <span class="string">&quot;_shards&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;total&quot;</span> : <span class="number">5</span>,</span><br><span class="line">    <span class="string">&quot;successful&quot;</span> : <span class="number">5</span>,</span><br><span class="line">    <span class="string">&quot;skipped&quot;</span> : <span class="number">0</span>,</span><br><span class="line">    <span class="string">&quot;failed&quot;</span> : <span class="number">0</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="string">&quot;hits&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;total&quot;</span> : <span class="number">1</span>,</span><br><span class="line">    <span class="string">&quot;max_score&quot;</span> : <span class="number">0.25811607</span>,</span><br><span class="line">    <span class="string">&quot;hits&quot;</span> : [</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="string">&quot;_index&quot;</span> : <span class="string">&quot;books&quot;</span>,</span><br><span class="line">        <span class="string">&quot;_type&quot;</span> : <span class="string">&quot;es&quot;</span>,</span><br><span class="line">        <span class="string">&quot;_id&quot;</span> : <span class="string">&quot;2&quot;</span>,</span><br><span class="line">        <span class="string">&quot;_score&quot;</span> : <span class="number">0.25811607</span>,</span><br><span class="line">        <span class="string">&quot;_source&quot;</span> : &#123;</span><br><span class="line">          <span class="string">&quot;title&quot;</span> : <span class="string">&quot;Mastering Elasticsearch&quot;</span>,</span><br><span class="line">          <span class="string">&quot;published&quot;</span> : <span class="string">&quot;2017&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Java-API-2"><a href="#Java-API-2" class="headerlink" title="Java API"></a>Java API</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">        <span class="comment">// use prepareUpdate</span></span><br><span class="line">        <span class="type">UpdateResponse</span> <span class="variable">response</span> <span class="operator">=</span> client.prepareUpdate(<span class="string">&quot;books&quot;</span>, <span class="string">&quot;es&quot;</span>, <span class="string">&quot;2&quot;</span>).setScript(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Script</span>(<span class="string">&quot;ctx._source.published = \&quot;2017\&quot;&quot;</span>)</span><br><span class="line">        ).get();</span><br><span class="line">        <span class="type">UpdateResponse</span> <span class="variable">response</span> <span class="operator">=</span> client.prepareUpdate(<span class="string">&quot;books&quot;</span>, <span class="string">&quot;es&quot;</span>, <span class="string">&quot;2&quot;</span>)</span><br><span class="line">                .setDoc(</span><br><span class="line">                        XContentFactory.jsonBuilder().startObject().field(<span class="string">&quot;published&quot;</span>, <span class="string">&quot;2017&quot;</span>).endObject()</span><br><span class="line">                )</span><br><span class="line">                .get();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// use UpdateRequest</span></span><br><span class="line">        <span class="type">UpdateResponse</span> <span class="variable">response</span> <span class="operator">=</span> client.update(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">UpdateRequest</span>(<span class="string">&quot;books&quot;</span>, <span class="string">&quot;es&quot;</span>, <span class="string">&quot;2&quot;</span>)</span><br><span class="line">                        .doc(</span><br><span class="line">                                XContentFactory.jsonBuilder().startObject().field(<span class="string">&quot;published&quot;</span>, <span class="string">&quot;2017&quot;</span>).endObject()</span><br><span class="line">                        )</span><br><span class="line">        ).get();</span><br><span class="line">        System.out.println(response);</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">结果：</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">UpdateResponse[index=books,type=es,id=2,version=2,result=updated,shards=ShardInfo&#123;total=2, successful=1, failures=[]&#125;]</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="删"><a href="#删" class="headerlink" title="删"></a>删</h3><h4 id="Restful-3"><a href="#Restful-3" class="headerlink" title="Restful"></a>Restful</h4><p><code>curl -XDELETE &#39;localhost:9200/books/es/2&#39;</code></p>
+<p><code>&#123;&quot;found&quot;:true,&quot;_index&quot;:&quot;books&quot;,&quot;_type&quot;:&quot;es&quot;,&quot;_id&quot;:&quot;2&quot;,&quot;_version&quot;:3,&quot;result&quot;:&quot;deleted&quot;,&quot;_shards&quot;:&#123;&quot;total&quot;:2,&quot;successful&quot;:1,&quot;failed&quot;:0&#125;&#125;</code></p>
+<p>结果验证:</p>
+<p><code> curl -XGET &#39;localhost:9200/books/_search?pretty&amp;q=title:mastering&#39;</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;took&quot;</span> : <span class="number">1</span>,</span><br><span class="line">  <span class="string">&quot;timed_out&quot;</span> : <span class="literal">false</span>,</span><br><span class="line">  <span class="string">&quot;_shards&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;total&quot;</span> : <span class="number">5</span>,</span><br><span class="line">    <span class="string">&quot;successful&quot;</span> : <span class="number">5</span>,</span><br><span class="line">    <span class="string">&quot;skipped&quot;</span> : <span class="number">0</span>,</span><br><span class="line">    <span class="string">&quot;failed&quot;</span> : <span class="number">0</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="string">&quot;hits&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;total&quot;</span> : <span class="number">0</span>,</span><br><span class="line">    <span class="string">&quot;max_score&quot;</span> : <span class="literal">null</span>,</span><br><span class="line">    <span class="string">&quot;hits&quot;</span> : [ ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Java-API-3"><a href="#Java-API-3" class="headerlink" title="Java API"></a>Java API</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">        <span class="type">DeleteResponse</span> <span class="variable">response</span> <span class="operator">=</span> client.prepareDelete(<span class="string">&quot;books&quot;</span>, <span class="string">&quot;es&quot;</span>, <span class="string">&quot;2&quot;</span>).get();</span><br><span class="line">        System.out.println(response);</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">结果:</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">DeleteResponse[index=books,type=es,id=2,version=5,result=deleted,shards=ShardInfo&#123;total=2, successful=1, failures=[]&#125;]</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h2><h3 id="数据架构的主要概念"><a href="#数据架构的主要概念" class="headerlink" title="数据架构的主要概念"></a>数据架构的主要概念</h3><ul>
+<li><p>索引</p>
+<p>索引（index） 是 Elasticsearch 对逻辑数据的逻辑存储，所以它可以分为更小的部分。你可以<strong>把索引看成关系型数据库的表</strong>。然而，索引的结构是为快速有效的全文索引准备的，特别是<strong>它不存储原始值</strong>。Elasticsearch 可以把索引存放在一台机器或者分散在多台服务器上，<strong>每个索引有一或多个分片（shard），每个分片可以有多个副本（replica）。</strong></p>
+</li>
+<li><p>文档</p>
+<p>存储在 Elasticsearch 中的<strong>主要实体</strong>叫文档（ document）。用关系型数据库来类比的话，<strong>一个文档相当于数据库表中的一行记录</strong>。</p>
+<p>文档由多个字段组成，每个字段可能多次出现在一个文档里，这样的字段叫<strong>多值字段</strong>（multivalued）。每个字段有类型，如文本、数值、日期等。字段类型也可以是复杂类型，一个字段包含其他子文档或者数组。</p>
+<p><strong>每个文档存储在一个索引中并有一个 Elasticsearch 自动生成的唯一标识符和文档类型</strong>。文档需要有对应文档类型的唯一标识符，这意味着在一个索引中，<strong>两个不同类型的文档可以有相同的唯一标识符</strong>。</p>
+</li>
+<li><p>文档类型</p>
+<p>在 Elasticsearch 中，一个索引对象可以存储很多不同用途的对象。例如，一个博客应用程序可以保存文章和评论。文档类型让我们轻易地区分单个索引中的不同对象。每个文档可以有不同的结构，但在实际部署中，将文件按类型区分对数据操作有很大帮助。当然，需要记住一个限制，<strong>不同的文档类型不能为相同的属性设置 不同的类型。例如，在同一索引中的所有文档类型中，一个叫 title 的字段必须具有相同的类型。</strong></p>
+</li>
+<li><p>映射</p>
+<p><strong>文档中的每个字段都必须根据不同类型做相应的分析。Elasticsearch 在映射中存储有关字段的信息</strong>。每一个 文档类型都有自己的映射，即使我们没有明确定义。</p>
+</li>
+</ul>
+<h3 id="主要概念"><a href="#主要概念" class="headerlink" title="主要概念"></a>主要概念</h3><ul>
+<li><p>节点和集群</p>
+<p>Elasticsearch 可以运行在许多互相合作的服务器上。这些服务器称为集群（cluster），形成集群的每个服务器称为节点（node）。</p>
+</li>
+<li><p>分片</p>
+<p>当有大量的文档时，由于内存的限制、硬盘能力、处理能力不足、<strong>无法足够快地响应客户端请求等</strong>，<strong>一个节点可能不够。在这种情况下，数据可以分为较小的称为分片（shard）的部分</strong>（其中<strong>每个分片都是一个独立的ApacheLucene 索引</strong>）。每个分片可以放在不同的服务器上，因此，数据可以在集群的节点中传播。<strong>当你查询的索引分布在多个分片上时，Elasticsearch 会把查询发送给每个相关的分片，并将结果合并在一起，而应用程序并不知道分片的存在。此外，多个分片可以加快索引。</strong></p>
+</li>
+<li><p>副本</p>
+<p>为了<strong>提高查询吞吐量或实现高可用性</strong>，可以使用分片副本。<strong>副本（replica）只是一个分片的精确复制</strong>，每个分片可以有零个或多个副本。换句话说，<strong>Elasticsearch 可以有许多相同的分片，其中之一被自动选择去更改索引操作。这种特殊的分片称为主分片（primaryshard），其余称为副本分片（replicashard）</strong>。在主分片丢失时，例如该分片数据所在服务器不可用，集群将副本提升为新的主分片。</p>
+<p>​</p>
+</li>
+</ul>
+<h2 id="基本查询"><a href="#基本查询" class="headerlink" title="基本查询"></a>基本查询</h2><h4 id="词条查询（term）"><a href="#词条查询（term）" class="headerlink" title="词条查询（term）"></a>词条查询（<code>term</code>）</h4><p>词条查询是 Elasticsearch 中的一个简单查询。<strong>它仅匹配在给定字段中含有该词条的文档，而且是确切的、未经分析的词条</strong>。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">                                    </span><br><span class="line">     &#123;</span><br><span class="line">       &quot;query&quot; : &#123;</span><br><span class="line">          &quot;term&quot; : &#123;</span><br><span class="line">             &quot;title&quot;: &quot;elasticsearch&quot; </span><br><span class="line">          &#125;</span><br><span class="line">       &#125;</span><br><span class="line">     &#125;&#x27;</span><br><span class="line">     </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">另外的查询 json</span></span><br><span class="line">          &#123;</span><br><span class="line">            &quot;query&quot; : &#123;</span><br><span class="line">               &quot;term&quot; : &#123;</span><br><span class="line">                  &quot;title&quot;: &#123;</span><br><span class="line">                       &quot;value&quot;: &quot;elasticsearch&quot;,</span><br><span class="line">                       &quot;boost&quot;: 10.0</span><br><span class="line">                  &#125;</span><br><span class="line">               &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>由于索引内容全改为小写，所以搜索的也改为小写</p>
+<h4 id="多词条查询（terms-tags）"><a href="#多词条查询（terms-tags）" class="headerlink" title="多词条查询（terms-tags）"></a>多词条查询（<code>terms-tags</code>）</h4><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;query&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">     <span class="attr">&quot;terms&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;published&quot;</span> <span class="punctuation">:</span> <span class="punctuation">[</span> <span class="string">&quot;2013&quot;</span><span class="punctuation">,</span> <span class="string">&quot;2012&quot;</span> <span class="punctuation">]</span></span><br><span class="line">     <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="匹配所有文件（match-all）"><a href="#匹配所有文件（match-all）" class="headerlink" title="匹配所有文件（match_all）"></a>匹配所有文件（<code>match_all</code>）</h4><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;query&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">     <span class="attr">&quot;match_all&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="常用词（common）"><a href="#常用词（common）" class="headerlink" title="常用词（common）"></a>常用词（<code>common</code>）</h4><p>常用词查询是在没有使用停用词（stopword，<a target="_blank" rel="noopener" href="http://en.wikipedia.org/wiki/Stop_words%EF%BC%89%E7%9A%84%E6%83%85%E5%86%B5%E4%B8%8B%EF%BC%8CElasticsearch%E4%B8%BA%E4%BA%86%E6%8F%90%E9%AB%98%E5%B8%B8%E7%94%A8%E8%AF%8D%E7%9A%84%E6%9F%A5%E8%AF%A2%E7%9B%B8%E5%85%B3%E6%80%A7%E5%92%8C%E7%B2%BE%E7%A1%AE%E6%80%A7%E8%80%8C%E6%8F%90%E4%BE%9B%E7%9A%84%E4%B8%80%E4%B8%AA%E7%8E%B0%E4%BB%A3%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E3%80%82%E4%BE%8B%E5%A6%82%EF%BC%8C%E2%80%9Cbook">http://en.wikipedia.org/wiki/Stop_words）的情况下，Elasticsearch为了提高常用词的查询相关性和精确性而提供的一个现代解决方案。例如，“book</a> and coffee”可以翻译成3个词查询，每一个都有性能上的成本（词越多，查询性能越低）。<strong>但『and』这个词非常常见，对文档得分的影响非常低。解决办法是常用词查询，将查询分为两组。第一组包含重要的词，出现的频率较低。第二组包含较高频率的、不那么重要的词。</strong>先执行第一个查询，Elasticsearch从第一组的所有词中计算分数。这样，通常都很重要的低频词总是被列入考虑范围。然后，Elasticsearch对第二组中的词执行二次查询，但只为与第一个查询中匹配的文档计算得分。这样只计算了相关文档的得分，实现了更高的性能。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-common-terms-query.html">https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-common-terms-query.html</a></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;common&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;title&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="string">&quot;this is bonsai cool&quot;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;cutoff_frequency&quot;</span><span class="punctuation">:</span> <span class="number">0.001</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>查询可以使用下列的参数：</p>
+<ul>
+<li>query：定义实际查询内容</li>
+<li>cutoff_frequency：这个参数定义一个百分比（0.001表示0.1%）或一个绝对值（当此属性值&gt;&#x3D;1时）。<strong>这个值用来构建高、低频词组。此参数设置为0.001意味着频率&lt;&#x3D;0.1%的词将出现在低频词组中。</strong></li>
+<li>low_freq_operator：这个参数可以设为 or 或 and，默认是or。它用来<strong>指定为低频词组构建查询时用到的布尔运算符</strong>。如果希望所有的词都在文档中出现才认为是匹配，应该把它设置为and。</li>
+<li>high_freq_operator：这个参数可以设为 or 或a nd，默认是or。它用来<strong>指定为高频词组构建查询时用到的布尔运算符</strong>。如果希望所有的词都在文档中出现才认为是匹配，那么应该把它设置为and。</li>
+<li>minimum_should_match：不使用 low_freq_operator 和 high_freq_operator 参数的话，可以使用使用minimum_should_match 参数。和其他查询一样，它<strong>允许指定匹配的文档中应该出现的查询词的最小个数</strong>。</li>
+<li>boost：这个参数定义了赋给文档得分的<strong>加权值</strong>。</li>
+<li>analyzer：这个参数<strong>定义了分析查询文本时用到的分析器名称</strong>。默认值为 default analyzer。</li>
+<li>disable_coord：此参数的值默认为 false，它<strong>允许启用或禁用分数因子的计算，该计算基于文档中包含的所有查询词的分数</strong>。把它设置为true，得分不那么精确，但查询将稍快。</li>
+</ul>
+<h4 id="match-查询（match）"><a href="#match-查询（match）" class="headerlink" title="match 查询（match）"></a>match 查询（<code>match</code>）</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html">官方文档</a></p>
+<p>match 查询把 query 参数中的值拿出来，加以分析，然后构建相应的查询<strong>。使用 match 查询时，Elasticsearch 将对一个字段选择合适的分析器，所以可以确定，传给 match 查询的词条将被建立索引时相同的分析器处理</strong>。请记住，<strong>match 查询（以及将在稍后解释的 multi_match 查询）不支持 Lucene 查询语法</strong>。但是，它是完全符合搜索需求的一个查询处理器。</p>
+<p>最简单的查询</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;match&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;message&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;this is a test&quot;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>下面我们看看它几种类型</p>
+<h5 id="布尔值"><a href="#布尔值" class="headerlink" title="布尔值"></a>布尔值</h5><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;match&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;message&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="string">&quot;this is a test&quot;</span><span class="punctuation">,</span></span><br><span class="line">              	<span class="attr">&quot;operator&quot;</span><span class="punctuation">:</span> <span class="string">&quot;and&quot;</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>布尔匹配查询分析提供的文本，然后做出布尔查询。有几个参数允许控制布尔查询匹配行为：</p>
+<ul>
+<li>operator：此参数可以接受 or 和 and，<strong>控制用来连接创建的布尔条件的布尔运算符</strong>。默认值是or。如果希望查询中的所有条件都匹配，可以使用and运算符。</li>
+<li>analyzer：这个参数定义了分析查询文本时用到的分析器的名字。默认值为 default analyzer。</li>
+<li>fuzziness：<strong>可以通过提供此参数的值来构建模糊查询</strong>（fuzzy query）。它为字符串类型提供从0.0到1.0的值。构造模糊查询时，该参数将用来设置相似性。</li>
+<li>prefix_length：<strong>此参数可以控制模糊查询的行为</strong>。</li>
+<li>max_expansions：<strong>此参数可以控制模糊查询的行为</strong>。</li>
+<li>zero_terms_query：该参数允许<strong>指定当所有的词条都被分析器移除时（例如，因为停止词），查询的行为。它可以被设置为none或all，默认值是none。</strong>在分析器移除所有查询词条时，该参数设置为none，将没有文档返回；设置为all，则将返回所有文档。</li>
+<li>cutoff_frequency：<strong>该参数允许将查询分解成两组：一组低频词和一组高频词</strong>。</li>
+</ul>
+<h5 id="match-phrase"><a href="#match-phrase" class="headerlink" title="match_phrase"></a>match_phrase</h5><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query-phrase.html">官方文档</a></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;match_phrase&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;message&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;query&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;this is a test&quot;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;analyzer&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;my_analyzer&quot;</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>match_phrase 查询类似于布尔查询，不同的是，<strong>它从分析后的文本中构建短语查询，而不是布尔子句</strong>。该查询可以使用下面几种参数：</p>
+<ul>
+<li>slop：这是一个整数值，<strong>该值定义了文本查询中的词条和词条之间可以有多少个未知词</strong>条，以被视为跟一个短语匹配。此参数的默认值是0，这意味着，不允许有额外的词条1。</li>
+<li>analyzer：这个参数定义定义了分析查询文本时用到的分析器的名字。默认值为 default analyzer。</li>
+</ul>
+<h5 id="match-phrase-prefix"><a href="#match-phrase-prefix" class="headerlink" title="match_phrase_prefix"></a>match_phrase_prefix</h5><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query-phrase-prefix.html">官方文档</a></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;match_phrase_prefix&quot;</span> : &#123;</span><br><span class="line">            <span class="string">&quot;message&quot;</span> : &#123;</span><br><span class="line">                <span class="string">&quot;query&quot;</span> : <span class="string">&quot;quick brown f&quot;</span>,</span><br><span class="line">                <span class="string">&quot;max_expansions&quot;</span> : <span class="number">10</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>match_query 查询的最后一种类型是 match_phrase_prefix 查询。此查询跟 match_phrase 查询几乎一样，但除此之外，<strong>它允许查询文本的最后一个词条只做前缀匹配</strong>。此外，除了 match_phrase 查询公开的参数，<strong>还公开了一个额外参数max_expansions。这个参数控制有多少前缀将被重写成最后的词条。</strong></p>
+<h4 id="multi-match"><a href="#multi-match" class="headerlink" title="multi_match"></a>multi_match</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-multi-match-query.html">官方文档</a></p>
+<p>可以通过 fields 指定多字段进行 match 查询</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;multi_match&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span>    <span class="string">&quot;this is a test&quot;</span><span class="punctuation">,</span> </span><br><span class="line">      <span class="attr">&quot;fields&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span> <span class="string">&quot;subject&quot;</span><span class="punctuation">,</span> <span class="string">&quot;message&quot;</span> <span class="punctuation">]</span> </span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>除了 match 提供的参数，它还可以通过以下参数来控制行为:</p>
+<ul>
+<li>use_dis_max：该参数定义一个布尔值，<strong>设置为 true 时，使用析取最大分查询，设置为false时，使用布尔查询</strong>。默认值为 true。</li>
+<li>tie_breaker：只有在 use_dis_max 参数设为 true 时才会使用这个参数。<strong>它指定低分数项和最高分数项之间的平衡</strong>。</li>
+</ul>
+<h4 id="query-string-查询"><a href="#query-string-查询" class="headerlink" title="query_string 查询"></a>query_string 查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html">官方文档</a></p>
+<p>相比其他查询， query_string 支持全部 Apache Lucene 查询语法</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;query_string&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;query&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;city.\\*:(this AND that OR thus)&quot;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="针对多字段"><a href="#针对多字段" class="headerlink" title="针对多字段"></a>针对多字段</h5><p>将 <code>use_ids_max</code> 设置为 true</p>
+<h4 id="simple-query-string-查询"><a href="#simple-query-string-查询" class="headerlink" title="simple_query_string 查询"></a>simple_query_string 查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html">官方文档</a></p>
+<p>使用 Lucene 最新查询解析器之一: <code>SimpleQueryParser</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;simple_query_string&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="string">&quot;\&quot;fried eggs\&quot; +(eggplant | potato) -frittata&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;fields&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;title^5&quot;</span><span class="punctuation">,</span> <span class="string">&quot;body&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;default_operator&quot;</span><span class="punctuation">:</span> <span class="string">&quot;and&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="标识符查询"><a href="#标识符查询" class="headerlink" title="标识符查询"></a>标识符查询</h4><p>仅用于提供的标识符来过滤返回的文档，针对内部 _uid 字段运行</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.0/query-dsl-ids-query.html">官方文档</a></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;ids&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;type&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;my_type&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;values&quot;</span> <span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;1&quot;</span><span class="punctuation">,</span> <span class="string">&quot;4&quot;</span><span class="punctuation">,</span> <span class="string">&quot;100&quot;</span><span class="punctuation">]</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="前缀查询"><a href="#前缀查询" class="headerlink" title="前缀查询"></a>前缀查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.0/query-dsl-prefix-query.html">官方文档</a></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span> </span><br><span class="line">  <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;prefix&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;user&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;ki&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="fuzzy-查询"><a href="#fuzzy-查询" class="headerlink" title="fuzzy 查询"></a>fuzzy 查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-fuzzy-query.html">官方文档</a></p>
+<p>基于编辑距离算法来匹配文档。编辑距离的计算基于我们提供的查询词条和被搜索文档。此查询很占用 CPU 资源，但当<strong>需要模糊匹配时它很有用</strong>，例如，当用户拼写错误时。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;fuzzy&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;user&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;value&quot;</span> <span class="punctuation">:</span>         <span class="string">&quot;ki&quot;</span><span class="punctuation">,</span></span><br><span class="line">                    <span class="attr">&quot;boost&quot;</span> <span class="punctuation">:</span>         <span class="number">1.0</span><span class="punctuation">,</span></span><br><span class="line">                    <span class="attr">&quot;fuzziness&quot;</span> <span class="punctuation">:</span>     <span class="number">2</span><span class="punctuation">,</span></span><br><span class="line">                    <span class="attr">&quot;prefix_length&quot;</span> <span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">                    <span class="attr">&quot;max_expansions&quot;</span><span class="punctuation">:</span> <span class="number">100</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>可以使用下面的参数来控制 fuzzy 查询的行为。</p>
+<ul>
+<li>value：此参数指定了实际的查询。</li>
+<li>boost：此参数指定了查询的加权值，默认为1.0。</li>
+<li>min_similarity：<strong>此参数指定了一个词条被算作匹配所必须拥有的最小相似度</strong>。对字符串字段来说，这个值应该在0到1之间，包含0和1。对于数值型字段，这个值可以大于1，比如查询值是20，min_similarity设为3，则可以得到17~23的值。对于日期字段，可以把min_similarity参数值设为1d、2d、1m等，分别表示1天、2天、1个月。</li>
+<li>prefix_length：此参数<strong>指定差分词条的公共前缀长度</strong>，默认值为0。</li>
+<li>max_expansions：此参数<strong>指定查询可被扩展到的最大词条数</strong>，默认值是无限制。</li>
+</ul>
+<h4 id="通配符查询"><a href="#通配符查询" class="headerlink" title="通配符查询"></a>通配符查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.0/query-dsl-wildcard-query.html">官方文档</a></p>
+<p>通配符查询允许我们在查询值中使用 * 和 ? 等通配符。此外，通配符查询跟词条查询在内容方面非常类似。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;wildcard&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;user&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;value&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;ki*y&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;boost&quot;</span> <span class="punctuation">:</span> <span class="number">2.0</span> <span class="punctuation">&#125;</span> <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="more-like-this-查询"><a href="#more-like-this-查询" class="headerlink" title="more_like_this 查询"></a>more_like_this 查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.0/query-dsl-mlt-query.html">官方文档</a></p>
+<p>more_like_this 查询让我们能够得到与提供的文本类似的文档。Elasticsearch 支持几个参数来定义 more_like_this 查询如何工作，如下所示。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;more_like_this&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;fields&quot;</span> <span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;title&quot;</span><span class="punctuation">,</span> <span class="string">&quot;description&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;like&quot;</span> <span class="punctuation">:</span> <span class="string">&quot;Once upon a time&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;min_term_freq&quot;</span> <span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;max_query_terms&quot;</span> <span class="punctuation">:</span> <span class="number">12</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>fields：此参数定义<strong>应该执行查询的字段数组</strong>，默认值是 _all 字段。</li>
+<li>like_text：这是一个必需的参数，包含<strong>用来跟文档比较的文本</strong>。</li>
+<li>percent_terms_to_match：此参数<strong>定义了文档需要有多少百分比的词条与查询匹配才能认为是类似</strong>的，默认值为0.3，意思是30%。</li>
+<li>min_term_freq：此参数<strong>定义了文档中词条的最低词频</strong>，低于此频率的词条将被忽略，默认值为2。</li>
+<li>max_query_terms：此参数<strong>指定生成的查询中能包括的最大查询词条数</strong>，默认值为25。值越大，精度越大，但性能也越低。</li>
+<li>stop_words：此参数<strong>定义了一个单词的数组，当比较文档和查询时，这些单词将被忽略</strong>，默认值为空数组。</li>
+<li>min_doc_freq：此参数<strong>定义了包含某词条的文档的最小数目</strong>，低于此数目时，该词条将被忽略，默认值为5，意味着一个词条至少应该出现在5个文档中，才不会被忽略。</li>
+<li>max_doc_freq：此参数<strong>定义了包含某词条的文档的最大数目</strong>，高于此数目时，该词条将被忽略，默认值为无限制。</li>
+<li>min_word_len：此参数<strong>定义了单词的最小长度</strong>，低于此长度的单词将被忽略，默认值为0。</li>
+<li>max_word_len：此参数<strong>定义了单词的最大长度</strong>，高于此长度的单词将被忽略，默认值为无限制。</li>
+<li>boost_terms：此参数定义了用于每个<strong>词条的加权值</strong>，默认值为1。</li>
+<li>boost：此参数定义了用于<strong>查询的加权值</strong>，默认值为1。</li>
+<li>analyzer：此参数指定了针对我们提供的<strong>文本的分析器名称</strong>。</li>
+</ul>
+<h4 id="范围查询"><a href="#范围查询" class="headerlink" title="范围查询"></a>范围查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.0/query-dsl-range-query.html">官方文档</a></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;range&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;age&quot;</span> <span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="attr">&quot;gte&quot;</span> <span class="punctuation">:</span> <span class="number">10</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;lte&quot;</span> <span class="punctuation">:</span> <span class="number">20</span><span class="punctuation">,</span></span><br><span class="line">                <span class="attr">&quot;boost&quot;</span> <span class="punctuation">:</span> <span class="number">2.0</span></span><br><span class="line">            <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>gte：范围查询将匹配字段值大于或等于此参数值的文档。</li>
+<li>gt：范围查询将匹配字段值大于此参数值的文档。</li>
+<li>lte：范围查询将匹配字段值小于或等于此参数值的文档。</li>
+<li>lt：范围查询将匹配字段值小于此参数值的文档。</li>
+</ul>
+<h4 id="正则表达式查询"><a href="#正则表达式查询" class="headerlink" title="正则表达式查询"></a>正则表达式查询</h4><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.0/query-dsl-regexp-query.html">官方文档</a></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;regexp&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;name.first&quot;</span><span class="punctuation">:</span> <span class="string">&quot;s.*y&quot;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="版本控制"><a href="#版本控制" class="headerlink" title="版本控制"></a>版本控制</h2><p>之前查询返回的结果中有一个 <code>&quot;_version&quot;: 1</code></p>
+<p>仔细观察，你会发现在更新相同标识符的文档后，这个版本是递增的。默认情况下，Elasticsearch在添加、更改或删除文档时都会递增版本号。除了告诉我们对文档所做更改的次数，还能够实现**<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E4%B9%90%E8%A7%82%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6">乐观锁</a>**。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ElasticSearch/" rel="tag"># ElasticSearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/11/20/Spring-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E5%88%9B%E5%BB%BA-bean/" rel="prev" title="Spring 源码解析—创建 bean">
+                  <i class="fa fa-angle-left"></i> Spring 源码解析—创建 bean
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/11/25/Spring-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%AE%B9%E5%99%A8%E7%9A%84%E5%8A%9F%E8%83%BD%E6%89%A9%E5%B1%95-BeanFactory%E5%8A%9F%E8%83%BD%E6%89%A9%E5%B1%95/" rel="next" title="Spring-源码解析-容器的功能扩展-BeanFactory功能扩展">
+                  Spring-源码解析-容器的功能扩展-BeanFactory功能扩展 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

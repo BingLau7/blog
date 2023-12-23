@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="问题 零拷贝是什么，Netty 的零拷贝是什么？ 零拷贝有什么优势？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty与Zero Copy">
+<meta property="og:url" content="http://example.com/2018/12/26/Netty%E4%B8%8EZero-Copy/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="问题 零拷贝是什么，Netty 的零拷贝是什么？ 零拷贝有什么优势？">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/images/blog_netty_zero_copy/figure1.jpg">
+<meta property="og:image" content="http://example.com/images/blog_netty_zero_copy/figure2.jpg">
+<meta property="og:image" content="http://example.com/images/blog_netty_zero_copy/figure3.jpg">
+<meta property="og:image" content="http://example.com/images/blog_netty_zero_copy/figure4.jpg">
+<meta property="og:image" content="http://example.com/images/blog_netty_zero_copy/figure5.jpg">
+<meta property="article:published_time" content="2018-12-26T15:50:05.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.753Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="NIO">
+<meta property="article:tag" content="Netty源码分析系列">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/blog_netty_zero_copy/figure1.jpg">
+
+
+<link rel="canonical" href="http://example.com/2018/12/26/Netty%E4%B8%8EZero-Copy/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2018/12/26/Netty%E4%B8%8EZero-Copy/","path":"2018/12/26/Netty与Zero-Copy/","title":"Netty与Zero Copy"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Netty与Zero Copy | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OS-%E7%9A%84-Zero-Copy"><span class="nav-number">2.1.</span> <span class="nav-text">OS 的 Zero Copy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty-%E4%B8%AD%E7%9A%84-Zero-Copy"><span class="nav-number">2.2.</span> <span class="nav-text">Netty 中的 Zero Copy</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Demo"><span class="nav-number">2.2.1.</span> <span class="nav-text">Demo</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CompositeByteBuf-%E5%89%96%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">CompositeByteBuf 剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E9%80%BB%E8%BE%91"><span class="nav-number">3.1.</span> <span class="nav-text">整体逻辑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Slice-%E5%89%96%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">Slice 剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E9%80%BB%E8%BE%91"><span class="nav-number">4.1.</span> <span class="nav-text">主要逻辑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FileRegion-%E5%89%96%E6%9E%90"><span class="nav-number">5.</span> <span class="nav-text">FileRegion 剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Demo-1"><span class="nav-number">5.1.</span> <span class="nav-text">Demo</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%9D%E8%AF%95%E5%9B%9E%E7%AD%94"><span class="nav-number">6.</span> <span class="nav-text">尝试回答</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">7.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/12/26/Netty%E4%B8%8EZero-Copy/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Netty与Zero Copy | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Netty与Zero Copy
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-26 23:50:05" itemprop="dateCreated datePublished" datetime="2018-12-26T23:50:05+08:00">2018-12-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%9F%BA%E7%A1%80%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">基础原理</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ol>
+<li>零拷贝是什么，Netty 的零拷贝是什么？</li>
+<li>零拷贝有什么优势？</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>首先要清楚，零拷贝是什么。</p>
+<h3 id="OS-的-Zero-Copy"><a href="#OS-的-Zero-Copy" class="headerlink" title="OS 的 Zero Copy"></a>OS 的 Zero Copy</h3><p>在操作系统下，当我们在进行网络读(read)写(send)的时候，通常</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">File.read(fileDesc, buf, len);</span><br><span class="line">Socket.send(socket, buf, len);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>read 导致调用从 用户态 转移到 内核态，会先检查文件内容是否存在于内核缓冲区，若存在则将内容 copy 到用户空间中，若不存在则会操作 DMA(Direct Memory Access) 从磁盘中读取 copy 到内核缓冲区[1], 在进行上述 copy 到用户控件的操作[2]. 此处可能存在 1-2 次 copy 操作，2 次用户态与内核态的上下文切换。这里可能因为文件内容过大导致内核缓冲区一直无法启用。</li>
+<li>send 再切换 用户态 到 内核态，将内容 copy 到 socket 缓冲区中[1]，最后 socket 将缓冲区的内容发送（copy）到协议引擎[2]. 此处存在 2 次 copy 操作，1 次用户态与内核态的上下文切换。</li>
+</ol>
+<p>下图是其 copy </p>
+<p><img src="/images/blog_netty_zero_copy/figure1.jpg" alt="1"></p>
+<p>下图是其上下文切换</p>
+<p><img src="/images/blog_netty_zero_copy/figure2.jpg" alt="2"></p>
+<p>如上图，我们可以看出，其实从缓冲区 copy 到用户空间这两次 copy 及用户内核态直接的切换是完全可以避免的。这时候就需要使用到 zero copy 了。</p>
+<p>在 Java 中，zero copy 通常是利用 <code>FileChannel.transferTo</code> 来实现。下面是其函数签名:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span>  position</span></span><br><span class="line"><span class="comment"> *         The position within the file at which the transfer is to begin;</span></span><br><span class="line"><span class="comment"> *         must be non-negative</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span>  count</span></span><br><span class="line"><span class="comment"> *         The maximum number of bytes to be transferred; must be</span></span><br><span class="line"><span class="comment"> *         non-negative</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span>  target</span></span><br><span class="line"><span class="comment"> *         The target channel</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span>  The number of bytes, possibly zero,</span></span><br><span class="line"><span class="comment"> *          that were actually transferred</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">transferTo</span><span class="params">(<span class="type">long</span> position, <span class="type">long</span> count, WritableByteChannel target)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>transferTo() 方法将数据从文件通道传输到了给定的可写字节通道。在内部，它依赖底层操作系统对零拷贝的支持；在 UNIX 和各种 Linux 系统中，此调用被传递到 sendfile() 系统调用中。</p>
+<p>我们相较于之前的过程有什么改进呢？</p>
+<p>下图是 transferTo 的 copy 流程</p>
+<p><img src="/images/blog_netty_zero_copy/figure3.jpg" alt="3"></p>
+<p>下图是 transferTo 的上下文切换</p>
+<p><img src="/images/blog_netty_zero_copy/figure4.jpg" alt="4"></p>
+<p>改进的地方：我们将上下文切换的次数从 <strong>4 -&gt; 2</strong>次，将数据复制的次数从 <strong>4 -&gt; 3 次（其中只有一次涉及到了 CPU）</strong>。但是这个代码尚未达到我们的零拷贝要求。如果底层网络接口卡支持收集操作的话，那么我们就可以进一步减少内核的数据复制。在 Linux 内核 2.4 及后期版本中，套接字缓冲区描述符就做了相应调整，以满足该需求。这种方法不仅可以减少多个上下文切换，还可以消除需要涉及 CPU 的重复的数据拷贝。<strong>对于用户方面，用法还是一样的，但是内部操作已经发生了改变</strong>：</p>
+<ol>
+<li>transferTo() 方法引发 DMA 引擎将文件内容拷贝到内核缓冲区。</li>
+<li>数据未被拷贝到套接字缓冲区。取而代之的是，只有包含关于数据的位置和长度的信息的描述符被追加到了套接字缓冲区。DMA 引擎直接把数据从内核缓冲区传输到协议引擎，从而消除了剩下的最后一次 CPU 拷贝。</li>
+</ol>
+<p>下图是结合了 transferTo 及收集操作的数据拷贝</p>
+<p><img src="/images/blog_netty_zero_copy/figure5.jpg" alt="5"></p>
+<h3 id="Netty-中的-Zero-Copy"><a href="#Netty-中的-Zero-Copy" class="headerlink" title="Netty 中的 Zero Copy"></a>Netty 中的 Zero Copy</h3><p>在 Netty 的世界中 Zero Copy 其实有两层含义。</p>
+<ol>
+<li>文档中的 Transparent zero copy is achieved by built-in composite buffer type. 是指在 Java 之上（user space）允许 CompositeByteBuf 使用单个 ByteBuf 一样操作多个 ByteBuf 而不需要任何 copy，通过 <code>slice</code> 方法可以讲单个 ByteBuf 拆分为多个 ByteBuf 操作，但是其本质为操作一个 copy。更多的是指代 Netty 中对于数据高效率操作方式.</li>
+<li>如果你所在的系统支持 zero copy，则可以使用 FileRegion 来写入 Channel, ChannelHandlerContrext, or ChannelPipeline.</li>
+</ol>
+<h4 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">compositeDemo</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">ByteBuf</span> <span class="variable">buf1</span> <span class="operator">=</span> PooledByteBufAllocator.DEFAULT.buffer();</span><br><span class="line">    buf1.writeBytes(<span class="string">&quot;heap test.&quot;</span>.getBytes());</span><br><span class="line"></span><br><span class="line">    <span class="type">ByteBuf</span> <span class="variable">buf2</span> <span class="operator">=</span> PooledByteBufAllocator.DEFAULT.directBuffer();</span><br><span class="line">    buf2.writeBytes(<span class="string">&quot;direct test&quot;</span>.getBytes());</span><br><span class="line"></span><br><span class="line">    <span class="type">ByteBuf</span> <span class="variable">compositeByteBuf</span> <span class="operator">=</span> Unpooled.wrappedBuffer(buf1, buf2);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// wrapped</span></span><br><span class="line">    <span class="type">byte</span>[] readBytes = <span class="keyword">new</span> <span class="title class_">byte</span>[compositeByteBuf.readableBytes()];</span><br><span class="line">    compositeByteBuf.readBytes(readBytes);</span><br><span class="line">    System.out.println(<span class="string">&quot;read content: &quot;</span> + <span class="keyword">new</span> <span class="title class_">String</span>(readBytes));</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// slice    </span></span><br><span class="line">    <span class="type">ByteBuf</span> <span class="variable">buf3</span> <span class="operator">=</span> buf1.slice(<span class="number">0</span>, <span class="number">4</span>);</span><br><span class="line">    <span class="type">byte</span>[] readBytes2 = <span class="keyword">new</span> <span class="title class_">byte</span>[buf3.readableBytes()];</span><br><span class="line">    buf3.readBytes(readBytes2);</span><br><span class="line">    System.out.println(<span class="string">&quot;read content: &quot;</span> + <span class="keyword">new</span> <span class="title class_">String</span>(readBytes2));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们两者都看.</p>
+<h2 id="CompositeByteBuf-剖析"><a href="#CompositeByteBuf-剖析" class="headerlink" title="CompositeByteBuf 剖析"></a>CompositeByteBuf 剖析</h2><p>其入口在 <code>Unpooled.wrappedBuffer(int maxNumComponents, ByteBuf... buffers)</code> 里，这里也有一些逻辑</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> ByteBuf <span class="title function_">wrappedBuffer</span><span class="params">(<span class="type">int</span> maxNumComponents, ByteBuf... buffers)</span> &#123;</span><br><span class="line">    <span class="keyword">switch</span> (buffers.length) &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; buffers.length; i++) &#123; <span class="comment">// 判定第一个可读的 ByteBuf，否则 release</span></span><br><span class="line">            <span class="type">ByteBuf</span> <span class="variable">buf</span> <span class="operator">=</span> buffers[i];</span><br><span class="line">            <span class="keyword">if</span> (buf.isReadable()) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CompositeByteBuf</span>(ALLOC, <span class="literal">false</span>, maxNumComponents, buffers, i); <span class="comment">// 创建 CompositeByteBuf</span></span><br><span class="line">            &#125;</span><br><span class="line">            buf.release();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> EMPTY_BUFFER;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>创建 CompositeByteBuf</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CompositeByteBuf(ByteBufAllocator alloc, <span class="type">boolean</span> direct, <span class="type">int</span> maxNumComponents,</span><br><span class="line">        ByteBuf[] buffers, <span class="type">int</span> offset) &#123;</span><br><span class="line">    <span class="built_in">this</span>(alloc, direct, maxNumComponents, buffers.length - offset);</span><br><span class="line"></span><br><span class="line">    addComponents0(<span class="literal">false</span>, <span class="number">0</span>, buffers, offset);</span><br><span class="line">    consolidateIfNeeded();</span><br><span class="line">    setIndex0(<span class="number">0</span>, capacity());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其参数含义：</p>
+<ul>
+<li>alloc: ByteBuf 分配</li>
+<li>direct: 是否是 DirectByteBuf</li>
+<li>maxNumComponents: 最多能组合 ByteBuf</li>
+<li>buffers：组合的 ByteBuf</li>
+<li>offset: ByteBuf 在总 ByteBuf 组合中的偏移值</li>
+</ul>
+<h3 id="整体逻辑"><a href="#整体逻辑" class="headerlink" title="整体逻辑"></a>整体逻辑</h3><ol>
+<li>本质并没有创建一个整体的 ByteBuf，而是通过组合模式管理多个 ByteBuf，使用 Component 来包装每个 ByteBuf（<code>addComponents0</code>）</li>
+<li>Component 中存储的 ByteBuf 在总 ByteBuf 数组中的 offset 范围（<code>new Component</code>）</li>
+<li>read &#x2F; write 需要先获取到具体的 Component（<code>getXXX/_setXXX/setXXX</code>）再操作，获取逻辑：<ol>
+<li>记录最近访问的 Component，优先检测</li>
+<li>二分查找</li>
+</ol>
+</li>
+</ol>
+<h2 id="Slice-剖析"><a href="#Slice-剖析" class="headerlink" title="Slice 剖析"></a>Slice 剖析</h2><p>这里入口在 <code>ByteBuf.slice()</code> 最后指向创建了 <code>UnpooledSlicedByteBuf extends AbstractUnpooledSlicedByteBuf</code> 类，其主要逻辑也是依托于 UnpooledSlicedByteBuf 实现。</p>
+<h3 id="主要逻辑"><a href="#主要逻辑" class="headerlink" title="主要逻辑"></a>主要逻辑</h3><ol>
+<li>使用 adjustment 字段记录其分隔点，这里若原本就是 <code>AbstractUnpooledSlicedByteBuf</code> 这需要叠加 adjustment</li>
+<li>重写 <code>getXXX/_setXXX/setXXX</code> 等设计 index 方法</li>
+</ol>
+<h2 id="FileRegion-剖析"><a href="#FileRegion-剖析" class="headerlink" title="FileRegion 剖析"></a>FileRegion 剖析</h2><h3 id="Demo-1"><a href="#Demo-1" class="headerlink" title="Demo"></a>Demo</h3><p>io.netty.example.file.FileServerHandler.channelRead0 实例</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">channelRead0</span><span class="params">(ChannelHandlerContext ctx, String msg)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">    <span class="type">RandomAccessFile</span> <span class="variable">raf</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">long</span> <span class="variable">length</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        raf = <span class="keyword">new</span> <span class="title class_">RandomAccessFile</span>(msg, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">        length = raf.length();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        ctx.writeAndFlush(<span class="string">&quot;ERR: &quot;</span> + e.getClass().getSimpleName() + <span class="string">&quot;: &quot;</span> + e.getMessage() + <span class="string">&#x27;\n&#x27;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (length &lt; <span class="number">0</span> &amp;&amp; raf != <span class="literal">null</span>) &#123;</span><br><span class="line">            raf.close();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ctx.write(<span class="string">&quot;OK: &quot;</span> + raf.length() + <span class="string">&#x27;\n&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (ctx.pipeline().get(SslHandler.class) == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">// SSL not enabled - can use zero-copy file transfer.</span></span><br><span class="line">        ctx.write(<span class="keyword">new</span> <span class="title class_">DefaultFileRegion</span>(raf.getChannel(), <span class="number">0</span>, length));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// SSL enabled - cannot use zero-copy file transfer.</span></span><br><span class="line">        ctx.write(<span class="keyword">new</span> <span class="title class_">ChunkedFile</span>(raf));</span><br><span class="line">    &#125;</span><br><span class="line">    ctx.writeAndFlush(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里可以看出当 SSL 没有开启时可以使用 DefaultFileRegion，其是 FileRegion 的默认实现，内部封装了 FileChannel.transferTo 的方法，关于这个方法，上文已经介绍过了。</p>
+<h2 id="尝试回答"><a href="#尝试回答" class="headerlink" title="尝试回答"></a>尝试回答</h2><ol>
+<li>零拷贝一般大众所知是 Linux 中一种用于减少在文件（网络）读写过程中用户态与内核态互相切换，内核态数据需要 copy 到用户态的优化手段。在 Java 的中是以 <code>FileChannel.transferTo</code> 来体现。</li>
+<li>Netty 的零拷贝分为两种。一种是使用 FileReigon 封装了 <code>FileChannel.transferTo</code> 操作使得网络读写性能得到优化；另一种是使用 CompositeByteBuf 使用单个 ByteBuf 一样操作多个 ByteBuf 而不需要任何 copy，通过 <code>slice</code> 方法可以讲单个 ByteBuf 拆分为多个 ByteBuf 操作，但是其本质为操作一个 copy。更多的是指代 Netty 中对于数据高效率操作方式。与内核态用户态切换无关。</li>
+<li>Netty 对于 ByteBuf 的零拷贝让多种数据组合更加方便。零拷贝最多能减少两次无意义的 copy 操作且大幅减少内核态与用户态的上下文切换。</li>
+</ol>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a target="_blank" rel="noopener" href="https://www.ibm.com/developerworks/cn/java/j-zerocopy/index.html">通过零拷贝实现有效数据传输</a><br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/20727615/is-nettys-zero-copy-different-from-os-level-zero-copy">Is Netty’s Zero Copy different from OS level Zero Copy?</a><br><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000007560884">对于 Netty ByteBuf 的零拷贝(Zero Copy) 的理解</a><br><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000011769315">Netty 之 Zero-copy 的实现（上）</a><br><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000011883632">Netty 之 Zero-copy 的实现（下）</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/NIO/" rel="tag"># NIO</a>
+              <a href="/tags/Netty%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E7%B3%BB%E5%88%97/" rel="tag"># Netty源码分析系列</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/12/10/Netty%E4%B8%AD%E7%9A%84ByteBuf-Pooled%E4%B8%8E%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="prev" title="Netty中的ByteBuf-Pooled与内存管理">
+                  <i class="fa fa-angle-left"></i> Netty中的ByteBuf-Pooled与内存管理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/01/13/Netty%E8%A7%A3%E6%9E%90-Echo%E7%9A%84bind-connect/" rel="next" title="Netty解析-Echo的bind&connect">
+                  Netty解析-Echo的bind&connect <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

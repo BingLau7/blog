@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="EXPLAIN 中列的含义">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL-EXPLAIN 注">
+<meta property="og:url" content="http://example.com/2017/06/21/MySQL-EXPLAIN-%E6%B3%A8/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="EXPLAIN 中列的含义">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-06-21T08:53:32.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.753Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="性能优化">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2017/06/21/MySQL-EXPLAIN-%E6%B3%A8/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2017/06/21/MySQL-EXPLAIN-%E6%B3%A8/","path":"2017/06/21/MySQL-EXPLAIN-注/","title":"MySQL-EXPLAIN 注"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>MySQL-EXPLAIN 注 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#EXPLAIN-%E4%B8%AD%E5%88%97%E7%9A%84%E5%90%AB%E4%B9%89"><span class="nav-number">1.</span> <span class="nav-text">EXPLAIN 中列的含义</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2017/06/21/MySQL-EXPLAIN-%E6%B3%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="MySQL-EXPLAIN 注 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL-EXPLAIN 注
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-06-21 16:53:32" itemprop="dateCreated datePublished" datetime="2017-06-21T16:53:32+08:00">2017-06-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="EXPLAIN-中列的含义"><a href="#EXPLAIN-中列的含义" class="headerlink" title="EXPLAIN 中列的含义"></a>EXPLAIN 中列的含义</h3><span id="more"></span>
+
+<ul>
+<li><strong>id：</strong> 标识 <code>SELECT</code> 所属的行。如果在语句中没有子查询或联合，那么只会有唯一的 <code>SELECT</code>，于是每一行在这个列中都将显示一个 1。否则，内层 <code>SELECT</code> 语句一般会顺序编号，对应于其在原始语句中的位置。</li>
+<li><strong>select_type：</strong> 显示了对应行是简单还是复杂 <code>SELECT</code>（如果是后者，那么是三种复杂类型中的哪一种）。<ul>
+<li><code>SIMPLE</code>：查询中不包含子查询和 <code>UNION</code></li>
+<li><code>PRIMARY</code>：有任何复杂的子部分</li>
+<li><code>SUBQUERY</code>：包含在 <code>SELECT</code> 列表中的子查询的 <code>SELECT</code>（换句话说，不在 <code>FROM</code> 子句中）</li>
+<li><code>DERIVED</code>：表示包含在 <code>FROM</code> 子句的子查询中的 <code>SELECT</code>，MySQL 会递归执行并将结果放在一个临时表中。服务器内部称为『派生表』，因为该临时表是从子查询中派生来的。</li>
+<li><code>UNION</code>：在 <code>UNION</code> 中的第二个和随后的 <code>SELECT</code> 被标记为 <code>UNION</code>。第一个 <code>SELECT</code> 被标记就好像它以部分外查询来执行。</li>
+<li><code>UNION RESULT</code>：用来从 UNION 的匿名临时表检索结果的 <code>SELECT</code> 被标记为 <code>UNION RESULT</code>。</li>
+</ul>
+</li>
+<li><strong>table：</strong> 显示对应行正在访问哪个表。当 FROM 子句中有子查询或有 <code>UNION</code> 时，由于 MySQL 创建的匿名临时表仅在查询执行过程中存在。<ul>
+<li>当在 <code>FROM</code> 子句中有子查询时，table 列是 <code>&lt;derivedN&gt;</code> 的形式，其中 N 是子查询的 id、这总是『向前引用』—— 换言之，N 指向 <code>EXPLAIN</code> 输出中后面的一行。</li>
+<li>当有 <code>UNION</code> 时，<code>UNION RESULT</code> 的 table 列包含一个参与 <code>UNION</code> 的 id 列表。这总是『向后引用』，因为 <code>UNION RESULT</code> 出现在 <code>UNION</code> 中所有参与行之后。</li>
+</ul>
+</li>
+<li><strong>partitions：</strong> 代表给定表所使用的分区。</li>
+<li><strong>type：</strong> 访问类型——换言之就是 MySQL 决定如何查找表中的行。下面是最重要的访问方法，依次从最差到最优：<ul>
+<li>ALL：全表扫描，通常意味着 MySQL 必须扫描整张表，从头到尾，去找到需要的行。（例外是使用了 LIMIT 或者在 Extra 列中显示 “Using distinct&#x2F;not exists”）</li>
+<li>index： 这个跟全表扫描一样，只是 MySQL 扫描表时按索引次序进行而不是行。它的主要优点是避免了排序；最大的缺点是要承担按索引次序读取整个表的开销。这通常意味着若是按随机次序访问行，开销将会非常大。如果在 Extra 列中看到 “Using index”，说明 MySQL 正在使用覆盖索引，它只扫描索引的数据，而不是按索引次序的每一行。它比按索引次序全表扫描的开销要少很多。</li>
+<li>range： 范围扫描就是一个有限制的索引扫描，它开始于索引里的某一点，返回匹配这个值域的行。它比全索引扫描好一些，因为它用不着遍历全部索引。显而易见的范围扫描是带有 <code>BETWEEN</code> 或在 <code>WHERE</code> 子句中带有 &gt; 的查询。当 MySQL 使用索引去查找一系列值时，例如 <code>IN()</code> 和 <code>OR</code> 列表，也会显示为范围扫描。<strong>然而，这两者其实是相当不同的访问类型</strong>，在性能上有重要的差异。具体可查看 《高性能 MySQL》 第五章文章『什么是范围条件』。</li>
+<li>ref：这是一种索引访问（有时也叫做索引查找），它返回所有匹配某个单个值的行。然而，它有可能会找到多个符合条件的行，因此，它是查找和扫描的混合体。此类索引访问只有当使用<strong>非唯一性索引</strong>或者<strong>唯一性索引的非唯一性前缀</strong>时才会发生。把它叫做 ref 是因为索引要跟某个参考值相比较。ref_or_null 是 ref 智商的一个变体，它意味着 MySQL 必须在初次查找的结果里进行第二次查找以找出 <code>NULL</code> 条目。</li>
+<li>eq_ref：使用这种所有查找，MySQL 知道最多只返回一条符合条件的查询。这种访问方法可以在 MySQL 使用主键或者唯一性索引查找时看到，它会将它们与某个参考值做比较。</li>
+<li>const, system：当 MySQL 能对查询的某部分进行优化并将其转换成一个常量时，它就会使用这些访问类型。举例来说，如果你通过将某一行的主键放入 <code>WHERE</code> 子句里的方式来选取此行的主键，MySQL 就能把这个查询转换为一个常量。然后就可以高效地将表从联接执行中移除。</li>
+<li>NULL：这种访问方式意味着 MySQL 能在优化阶段分解查询语句，在执行阶段甚至用不着再访问表或者索引。例如，从一个索引列里选取最小值可以通过单独查找索引来完成，不需要再执行时访问表。</li>
+</ul>
+</li>
+<li><strong>possible_keys：</strong> 显示了查询可以使用哪些索引，这是基于查询访问的列和使用的比较操作符来判断的。这个列表是在优化过程的早起创建的，因此有些罗列出来的索引可能对于后续优化过程是没用的。</li>
+<li><strong>key：</strong> 显示了 MySQL 决定采用哪个索引来优化对该表的访问。如果该索引没有出现在 possible_keys 列中，那么 MySQL 选用它是出于另外的原因——例如，它可能选择了一个覆盖所有，哪怕没有 <code>WHERE</code> 子句。换句话说， possible_keys 揭示了哪一个索引能有助于高效地行查找，而 key 显示的是优化采用哪一个索引可以最小化查询成本。</li>
+<li><strong>key_len：</strong> MySQL 在索引里使用的字节数。</li>
+<li><strong>ref：</strong> 显示了之前表在 key 列记录的索引中查找值所用的列或常量。</li>
+<li><strong>rows：</strong> MySQL 估计为了找到所需的行而要读取的行数。</li>
+<li><strong>filtered：</strong> 针对表里符合某个条件（WHERE 子句或联接条件）的记录数的百分比所做的一个悲观估计。</li>
+<li><strong>Extra：</strong> 包含的是不适用在其他列显示的额外信息。常见的最重要的值如下：<ul>
+<li>Using index：使用了覆盖索引。</li>
+<li>Using where：MySQL 服务器将在存储引擎检索行后再进行过滤。许多 <code>WHERE</code> 条件里涉及索引中的列，当（并且如果）它读取索引时，就能被存储引擎检验，因此不是所有带 <code>WHERE</code> 子句的查询都会显示 “Using where” 。有时 “Using where” 的出现就是一个暗示：查询可受益于不同的索引。</li>
+<li>Using temporary：意味着 MySQL 在对查询结果排序时会使用一个临时表。</li>
+<li>Using filesort：这意味着 MySQL 会在结果使用一个外部索引排序，而不是按索引次序从表里读取行。MySQL 有两种文件排序算法，两种方式都可以在内存或磁盘上完成。EXPLAIN 不会告诉你 MySQL 将使用哪一种文件排序，也不会告诉你排序会在内存里还是磁盘上完成。</li>
+<li>Range checked for each record (index map: N)：这个值以为着没有好用的索引，新的索引将在联接的每一行上重新估计。N 是显示在 possible_keys 列中索引的位图，并且是冗余的。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/06/11/AOP%E7%9A%84%E9%81%93%E7%90%86/" rel="prev" title="AOP的道理">
+                  <i class="fa fa-angle-left"></i> AOP的道理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/09/18/%E5%B9%B6%E5%8F%91%E7%9A%84%E5%A7%BF%E5%8A%BF/" rel="next" title="并发的姿势">
+                  并发的姿势 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

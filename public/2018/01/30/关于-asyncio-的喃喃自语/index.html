@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="大多数东西都是根据之前学习中的印象而来，这篇文章更多的是喃喃自语吧。 协程在 Python 3.5 之前，协程在我眼中应该就是 yield 这个语法的同义，通过 send、throw 等方法来作为其交互，用于多进程中以提升效率，然而就 Python 的使用环境来说，其实接触到的机会并不是太多。 在 Python 3.5 之后，给了一种新的，现在看起来还是比较友好的选择 1234567async d">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于 asyncio 的喃喃自语">
+<meta property="og:url" content="http://example.com/2018/01/30/%E5%85%B3%E4%BA%8E-asyncio-%E7%9A%84%E5%96%83%E5%96%83%E8%87%AA%E8%AF%AD/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="大多数东西都是根据之前学习中的印象而来，这篇文章更多的是喃喃自语吧。 协程在 Python 3.5 之前，协程在我眼中应该就是 yield 这个语法的同义，通过 send、throw 等方法来作为其交互，用于多进程中以提升效率，然而就 Python 的使用环境来说，其实接触到的机会并不是太多。 在 Python 3.5 之后，给了一种新的，现在看起来还是比较友好的选择 1234567async d">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-01-29T16:22:04.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.760Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="异步编程">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2018/01/30/%E5%85%B3%E4%BA%8E-asyncio-%E7%9A%84%E5%96%83%E5%96%83%E8%87%AA%E8%AF%AD/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2018/01/30/%E5%85%B3%E4%BA%8E-asyncio-%E7%9A%84%E5%96%83%E5%96%83%E8%87%AA%E8%AF%AD/","path":"2018/01/30/关于-asyncio-的喃喃自语/","title":"关于 asyncio 的喃喃自语"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>关于 asyncio 的喃喃自语 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%8F%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">协程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EventLoop"><span class="nav-number">2.</span> <span class="nav-text">EventLoop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Future-%E4%B8%8E-Future"><span class="nav-number">3.</span> <span class="nav-text">Future 与 Future</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%84%9F%E6%83%B3"><span class="nav-number">4.</span> <span class="nav-text">感想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/01/30/%E5%85%B3%E4%BA%8E-asyncio-%E7%9A%84%E5%96%83%E5%96%83%E8%87%AA%E8%AF%AD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="关于 asyncio 的喃喃自语 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          关于 asyncio 的喃喃自语
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-01-30 00:22:04" itemprop="dateCreated datePublished" datetime="2018-01-30T00:22:04+08:00">2018-01-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">工具</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>大多数东西都是根据之前学习中的印象而来，这篇文章更多的是喃喃自语吧。</p>
+<h3 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h3><p>在 Python 3.5 之前，协程在我眼中应该就是 <code>yield</code> 这个语法的同义，通过 <code>send</code>、<code>throw</code> 等方法来作为其交互，用于多进程中以提升效率，然而就 Python 的使用环境来说，其实接触到的机会并不是太多。</p>
+<p>在 Python 3.5 之后，给了一种新的，现在看起来还是比较友好的选择</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">hello</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello world!&quot;</span>)</span><br><span class="line">    <span class="comment"># asyncio.sleep 也是一个 coroutine</span></span><br><span class="line">    <span class="comment"># 异步调用asyncio.sleep(1):</span></span><br><span class="line">    <span class="comment"># 线程也可以从这儿拿到返回值（asyncio.sleep(1) 返回值为 None）</span></span><br><span class="line">    r = <span class="keyword">await</span> asyncio.sleep(<span class="number">1</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello again!&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>I/O</code> 密集的地方，填入 <code>await</code> ，在 <code>def</code> 前面加上 <code>async</code>，不需要去适应至今让我还是十分不适的 <code>yield</code> &#x2F; <code>yield from</code> </p>
+<span id="more"></span>
+
+<h3 id="EventLoop"><a href="#EventLoop" class="headerlink" title="EventLoop"></a>EventLoop</h3><p>最初接触到这个概念应该是 <code>epoll</code> 中，然后是在 <code>Tornado</code> 的源码中，当然，<code>Tornado</code> 也是用了 <code>epoll</code>。</p>
+<p>在 <code>EventLoop</code> 的世界中，它总是与 <code>thread</code> 共存，它只是负责接收事件，余下的由 <code>thread</code> 来解决，保证了并发，在最近阅读的 <code>Kafka</code> 源码中它看起来也是这么干的，不过它可能比起 <code>Tornado</code> 做得更加彻底，<code>Tornado</code> 整个应用只会保持一个 <code>EventLoop</code>，而 <code>Kafka</code> 为了保证高吞吐高并发，除了 <code>Accept</code> 之外，拥有多个类型注册器，又对应了不同类型的线程池，基本的读和写都不成问题了。</p>
+<p>说道这里，才开始说了 <code>asyncio</code> 中的 <code>EventLoop</code>。如果你只是运行 demo 的话，你会发现获取 <code>event_loop</code> 的方法非常简单 <code>asyncio.get_event_loop()</code>，但这只是在主线程中，如果你在其他线程中再看</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"><span class="keyword">import</span> time, threading</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 新线程执行的代码:</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">loop</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;thread %s is running...&#x27;</span> % threading.current_thread().name)</span><br><span class="line">    loop = asyncio.get_event_loop()</span><br><span class="line">    time.sleep(<span class="number">1</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;thread %s ended.&#x27;</span> % threading.current_thread().name)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;thread %s is running...&#x27;</span> % threading.current_thread().name)</span><br><span class="line">    t = threading.Thread(target=loop, name=<span class="string">&#x27;LoopThread&#x27;</span>)</span><br><span class="line">    t.start()</span><br><span class="line">    t.join()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;thread %s ended.&#x27;</span> % threading.current_thread().name)</span><br></pre></td></tr></table></figure>
+
+<p>获得的却是一个 <code>RuntimeError</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RuntimeError: There is no current event loop in thread &#x27;LoopThread&#x27;.</span><br></pre></td></tr></table></figure>
+
+<p>需要的是这么做</p>
+<ol>
+<li><code>loop = asyncio.new_evet_loop()</code></li>
+<li><code>asyncio.set_event_loop(loop)</code></li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 新线程执行的代码:</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">loop</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;thread %s is running...&#x27;</span> % threading.current_thread().name)</span><br><span class="line">    new_loop = asyncio.new_event_loop()</span><br><span class="line">    asyncio.set_event_loop(new_loop)</span><br><span class="line">    loop = asyncio.get_event_loop()</span><br><span class="line">    time.sleep(<span class="number">1</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;thread %s ended.&#x27;</span> % threading.current_thread().name)</span><br></pre></td></tr></table></figure>
+
+<p>其实是有种，多此一举的感觉。</p>
+<p>那，<code>event_loop</code> 有什么用呢？</p>
+<ul>
+<li>它是 <code>asyncio</code> 的起点，是执行所有事件的起点</li>
+<li>通过 <code>loop.run_forever()</code> + <code>loop.call_*</code> 实现对事件的调度，最后关闭的时候调用 <code>loop.close()</code></li>
+<li>通过 <code>loop.add_reader()、loop.remove_reader()、loop.add_writer()、loop.remove_writer()</code> 来注册读写事件，其中有两个参数：文件描述符、<code>callback</code>，另外还有就是 <code>callback</code> 的参数，事件驱动嘛，多用于 socket。</li>
+<li>通过使用 <code>run_in_executor</code> 来达到将耗时调用委托给线程池&#x2F;进程池</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">from</span> concurrent.futures <span class="keyword">import</span> ProcessPoolExecutor</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cpu_bound_operation</span>(<span class="params">x</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;cpu bounding&quot;</span>)</span><br><span class="line">    time.sleep(x)</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">func</span>():</span><br><span class="line">    <span class="comment"># 线程池 / 进程池执行</span></span><br><span class="line">    loop.run_in_executor(p, cpu_bound_operation, <span class="number">5</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;doing something thing&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    loop = asyncio.get_event_loop()</span><br><span class="line">    p = ProcessPoolExecutor(<span class="number">2</span>)</span><br><span class="line">    loop.run_until_complete(func())</span><br><span class="line">    loop.run_until_complete(func())</span><br><span class="line">    loop.run_until_complete(func())</span><br><span class="line">    </span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">doing something thing</span></span><br><span class="line"><span class="string">doing something thing</span></span><br><span class="line"><span class="string">doing something thing</span></span><br><span class="line"><span class="string">cpu bounding</span></span><br><span class="line"><span class="string">cpu bounding</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">-- sleep 5 seconds --</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">cpu bounding</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="Future-与-Future"><a href="#Future-与-Future" class="headerlink" title="Future 与 Future"></a>Future 与 Future</h3><p>  真的，我第一次知道 <code>Future</code> 是在 Java 中，然后是在 <code>Tornado</code> 中，然后告诉我，<code>Python</code> 中还有两个（完全不兼容） <code>Future</code>，分别是 <code>asyncio.futures.Future</code>，<code>concurrent.futures.Future</code>，而且这两个都在 <code>asyncio</code> 中使用，真是感觉，这屎有毒。</p>
+<blockquote>
+<p> 例如，<code>asyncio.run_coroutine_threadsafe()</code> 将调度一个协程到在另一个线程中运行的事件循环，但它返回一个 <code>concurrent.futures.Future</code> 对象，而不是 <code>asyncio.futures.Future</code> 对象。 这是有道理的，因为只有 <code>concurrent.futures.Future</code> 对象是线程安全的。</p>
+</blockquote>
+<p>你如果在阅读文档的时候你会发现，<code>loop.run_until_complete</code> 里面给出的参数就是 <code>future</code>，这里的 <code>future</code> 指的是 <code>asyncio.futures.Future</code>，文档会告诉你 <code>If the argument is a coroutine object, it is wrapped by ensure_future().</code> （我真的完全不想知道 <code>coroutine object</code> diff <code>coroutine</code>），简单来说我们从 <code>ensure_future()</code> 入手知道它大概封装了一个协程，然后读源码的时候发现它给你返回的是一个 <code>task</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">ensure_future</span>(<span class="params">coro_or_future, *, loop=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Wrap a coroutine or an awaitable in a future.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    If the argument is a Future, it is returned directly.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> futures.isfuture(coro_or_future):</span><br><span class="line">        <span class="keyword">if</span> loop <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span> <span class="keyword">and</span> loop <span class="keyword">is</span> <span class="keyword">not</span> coro_or_future._loop:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&#x27;loop argument must agree with Future&#x27;</span>)</span><br><span class="line">        <span class="keyword">return</span> coro_or_future</span><br><span class="line">    <span class="keyword">elif</span> coroutines.iscoroutine(coro_or_future):</span><br><span class="line">        <span class="keyword">if</span> loop <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            loop = events.get_event_loop()</span><br><span class="line">        task = loop.create_task(coro_or_future)</span><br><span class="line">        <span class="keyword">if</span> task._source_traceback:</span><br><span class="line">            <span class="keyword">del</span> task._source_traceback[-<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">return</span> task</span><br><span class="line">    <span class="keyword">elif</span> compat.PY35 <span class="keyword">and</span> inspect.isawaitable(coro_or_future):</span><br><span class="line">        <span class="keyword">return</span> ensure_future(_wrap_awaitable(coro_or_future), loop=loop)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> TypeError(<span class="string">&#x27;A Future, a coroutine or an awaitable is required&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这时候你大概能知道 <code>run_until_complete</code> 执行的是一个 <code>task</code> （当然，你如果去看文档的会知道，它能执行一个 task 列表）。</p>
+<h3 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h3><p>讲真，Python 3 的 <code>asyncio</code> 在我对比了 <code>epoll</code> 和 <code>Java</code> 的异步机制之后我觉得是将一件本来就不是对初学者很友好的机制再次复杂化，你需要很多新的东西，比如：<code>call</code>，协程，<code>eventLoop</code>，<code>task</code>，<code>future</code>，<code>executor</code> 等等，以及延展的 <code>yield</code>，<code>generator</code> 等等。</p>
+<p>幸好，社区已经有很多人为我们封装了基础的框架，优秀如 <code>aiohttp</code> 等，希望以后这类理解成本越来越低吧。</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a target="_blank" rel="noopener" href="https://docs.python.org/3/library/asyncio.html">官方文档</a></p>
+<p><a target="_blank" rel="noopener" href="https://linux.cn/article-8051-1.html">雾里看花之 Python Asyncio</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B/" rel="tag"># 异步编程</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/12/24/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E5%88%86%E6%9E%90%E2%80%94%E2%80%94RecordAccumulator/" rel="prev" title="Kafka生产者分析——RecordAccumulator">
+                  <i class="fa fa-angle-left"></i> Kafka生产者分析——RecordAccumulator
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/11/12/ByteBuffer-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" rel="next" title="ByteBuffer 源码剖析">
+                  ByteBuffer 源码剖析 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

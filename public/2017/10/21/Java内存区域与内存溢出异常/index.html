@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="图示各区用途">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java内存区域与内存溢出异常">
+<meta property="og:url" content="http://example.com/2017/10/21/Java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="图示各区用途">
+<meta property="og:locale">
+<meta property="og:image" content="https://github.com/BingLau7/blog/blob/master/images/blog_27/1.png?raw=true">
+<meta property="og:image" content="https://github.com/BingLau7/blog/blob/master/images/blog_27/2.png?raw=true">
+<meta property="og:image" content="https://github.com/BingLau7/blog/blob/master/images/blog_27/3.png?raw=true">
+<meta property="article:published_time" content="2017-10-21T08:55:36.000Z">
+<meta property="article:modified_time" content="2023-12-23T04:03:46.752Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/BingLau7/blog/blob/master/images/blog_27/1.png?raw=true">
+
+
+<link rel="canonical" href="http://example.com/2017/10/21/Java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2017/10/21/Java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/","path":"2017/10/21/Java内存区域与内存溢出异常/","title":"Java内存区域与内存溢出异常"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Java内存区域与内存溢出异常 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E7%A4%BA%E5%90%84%E5%8C%BA%E7%94%A8%E9%80%94"><span class="nav-number">1.</span> <span class="nav-text">图示各区用途</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%AE%A1%E6%95%B0%E5%99%A8"><span class="nav-number">1.1.</span> <span class="nav-text">程序计数器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%A0%88"><span class="nav-number">1.2.</span> <span class="nav-text">Java 虚拟机栈</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%96%B9%E6%B3%95%E6%A0%88"><span class="nav-number">1.3.</span> <span class="nav-text">本地方法栈</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-%E5%A0%86"><span class="nav-number">1.4.</span> <span class="nav-text">Java 堆</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E5%8C%BA"><span class="nav-number">1.5.</span> <span class="nav-text">方法区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0"><span class="nav-number">1.6.</span> <span class="nav-text">运行时常量池</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B4%E6%8E%A5%E5%86%85%E5%AD%98"><span class="nav-number">1.7.</span> <span class="nav-text">直接内存</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E6%8E%A2%E7%A7%98"><span class="nav-number">2.</span> <span class="nav-text">对象探秘</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA"><span class="nav-number">2.1.</span> <span class="nav-text">对象创建</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-number">2.2.</span> <span class="nav-text">对象的内存布局</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%A4%B4%EF%BC%9A"><span class="nav-number">2.2.1.</span> <span class="nav-text">对象头：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B%E6%95%B0%E6%8D%AE"><span class="nav-number">2.2.2.</span> <span class="nav-text">实例数据</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AF%B9%E9%BD%90%E5%A1%AB%E5%85%85"><span class="nav-number">2.2.3.</span> <span class="nav-text">对齐填充</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%AE%9A%E4%BD%8D%E8%AE%BF%E9%97%AE"><span class="nav-number">2.3.</span> <span class="nav-text">对象的定位访问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E%E4%B8%80%E4%B8%AA%E7%A8%8B%E5%BA%8F%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="nav-number">2.4.</span> <span class="nav-text">关于一个程序的创建过程</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%83%BD%E5%87%BA%E7%8E%B0-StackOverflowError-%E5%A4%84"><span class="nav-number">3.</span> <span class="nav-text">可能出现 StackOverflowError 处</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E6%9C%AC%E5%9C%B0%E6%96%B9%E6%B3%95%EF%BC%89%E6%A0%88%E4%B8%AD%E5%87%BA%E7%8E%B0%EF%BC%9A"><span class="nav-number">3.1.</span> <span class="nav-text">虚拟机（本地方法）栈中出现：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%83%BD%E5%87%BA%E7%8E%B0-OutOfMemoryError-%E5%A4%84"><span class="nav-number">4.</span> <span class="nav-text">可能出现 OutOfMemoryError 处</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E6%9C%AC%E5%9C%B0%E6%96%B9%E6%B3%95%EF%BC%89%E6%A0%88%E4%B8%AD%E5%87%BA%E7%8E%B0%EF%BC%9A-1"><span class="nav-number">4.1.</span> <span class="nav-text">虚拟机（本地方法）栈中出现：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A0%86%EF%BC%9A"><span class="nav-number">4.2.</span> <span class="nav-text">堆：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E5%8C%BA-%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0"><span class="nav-number">4.3.</span> <span class="nav-text">方法区 &amp; 运行时常量池</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B4%E6%8E%A5%E5%86%85%E5%AD%98%EF%BC%9A"><span class="nav-number">4.4.</span> <span class="nav-text">直接内存：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#OOM-%E6%97%B6-dump-%E6%97%A5%E5%BF%97"><span class="nav-number">4.5.</span> <span class="nav-text">OOM 时 dump 日志</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E4%B9%A6%E7%9B%AE"><span class="nav-number">5.</span> <span class="nav-text">参考书目</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2017/10/21/Java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Java内存区域与内存溢出异常 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java内存区域与内存溢出异常
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-10-21 16:55:36" itemprop="dateCreated datePublished" datetime="2017-10-21T16:55:36+08:00">2017-10-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%9F%BA%E7%A1%80%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">基础原理</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="图示各区用途"><a href="#图示各区用途" class="headerlink" title="图示各区用途"></a>图示各区用途</h3><p><img src="https://github.com/BingLau7/blog/blob/master/images/blog_27/1.png?raw=true" alt="内存区域图"></p>
+<span id="more"></span>
+
+<h4 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h4><p>可看作<strong>当前线程</strong>所执行的字节码的行号指示器。在 JVM 概念模型中（仅概念模型，各实现可能不一致），字节码解释器工作时就是通过改变这个计数器的值来选取下一条需要执行的字节码指令，分支、循环、跳转、异常处理、线程回复等基础功能都需要依赖这个计数器完成。</p>
+<p>Java 方法中：正在执行的虚拟机字节码指令的地址</p>
+<p>Native 方法中：空（Undefined）</p>
+<h4 id="Java-虚拟机栈"><a href="#Java-虚拟机栈" class="headerlink" title="Java 虚拟机栈"></a>Java 虚拟机栈</h4><p>线程私有，生命周期与线程相同。</p>
+<p>虚拟机栈描述的是 Java 方法执行的内存模型：每个方法在执行的同时都会创建一个栈帧（Stack Frame） 用于存储局部变量表（粗浅流行划分中的栈）、操作数栈、动态链接、方法出口等信息。每一个方法从调用直到执行完成的过程，就对应着一个栈帧在虚拟机栈中入栈到出栈的过程。</p>
+<p>局部变量表：存放编译期可知的各种基本类型、对象引用（不等同于对象本身，可能指向一个对象起始地址的引用指针， 也可能是指向一个代表对象的句柄或其他与此对象相关的位置） 和 returnAddress 类型（指向了一条字节码指令的地址）。</p>
+<h4 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h4><p>为虚拟机使用到的 Native 方法服务。</p>
+<h4 id="Java-堆"><a href="#Java-堆" class="headerlink" title="Java 堆"></a>Java 堆</h4><p>被所有线程共享的一块内存区域，在虚拟机启动时创建。此内存区域的唯一目的就是存放对象实例，几乎所有的对象实例（The heap is the run-time data area from which memory for all class instances and arrays is allocated.）都在这里分配内存。</p>
+<p>但随着 JIT 编译器的发展与逃逸分析技术逐渐成熟，栈上分配、标量替换优化技术将会导致一些微妙的变化，使之不『绝对』了。</p>
+<p>Java 堆是 GC 管理的主要区域。从内存回收角度来看，可以将其分为『新生代』（Eden 空间、From Survivor、To Survivor）和『老年代』。从内存分配的角度来看，线程共享的 Java 堆中可能划分出多个线程私有的分配缓冲区（Thread Local Allocation Buffer，TLAB）。</p>
+<p>Java 堆只需要保证逻辑上连续即可。</p>
+<p>通过 <code>-Xmx</code> (最大堆大小)和 <code>-Xms</code> (初始堆大小)控制大小。</p>
+<h4 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h4><p>各个线程共享的内存区域，它用于存储<strong>已被虚拟机加载的类信息、常量、静态变量、JIT 编译后的代码等</strong>数据。</p>
+<p>被很多人作为『永久代』对待（其实并不是），因为仅仅是之前的 HotSpot 设计团队将其 GC 分代收集扩展至方法区，或者说是使用永久代实现方法区而已。</p>
+<p>JVM 规范对方法区的限制非常宽松，除了和 Java 堆一样不需要连续的内存和可以选择固定大小和可扩展外，还可以选择不实现 GC（与此对应，如果实现了则内存回收主要目标是<strong>针对常量池的回收和对类型的卸载</strong>）。</p>
+<h4 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h4><p>方法区的一部分。Class 文件除了有类的版本、字段、方法、接口等描述信息外，还有一项信息是常量池（Constant Pool Table），用于<strong>存放编译器生成的各种字面量和符号引用</strong>，这部分内容将在类加载后进行方法区的运行时常量池中存放。<strong>（这个不是运行时常量池）</strong></p>
+<p>运行时长期是区别于上面的 Class 常量池：</p>
+<ol>
+<li><p>保存 Class 文件中描述的符号引用外，还会把翻译出来的直接引用也存储在运行时常量池中。</p>
+</li>
+<li><p>相较 Class 文件中的常量池具备动态性，并非预置入 Class 文件中常量池的内容才能进入方法区，运行期间也可能将新的常量放入池中，这种特性被开发人员利用较多的就是 <code>String#intern()</code> 方法（<a target="_blank" rel="noopener" href="https://tech.meituan.com/in_depth_understanding_string_intern.html">intern详细介绍</a>）</p>
+<p>​</p>
+</li>
+</ol>
+<h4 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h4><p>不是运行时数据区的一部分，也不是 Java 虚拟机规范中定义的内存区域，但是这部番内存也被频繁使用，且可能会导致 OOM 的出现。</p>
+<p>出现原因：1.4 加入 NIO，引入基于 Channel 和 Buffer 的 I&#x2F;O 方式，可以使用 Native 函数库直接分配堆外内存，然后通过存在 Java 堆中的 <code>DirectByteBuffer</code> 对象作为这块内存的引用进行操作。（避免 Java 堆与 Native 堆复制数据）。</p>
+<h3 id="对象探秘"><a href="#对象探秘" class="headerlink" title="对象探秘"></a>对象探秘</h3><h4 id="对象创建"><a href="#对象创建" class="headerlink" title="对象创建"></a>对象创建</h4><ol>
+<li><p>检查指令是否在常量池中对应到一个类的符号引用，该符号是否被加载、解析和初始化，如果没有则需要执行相应类加载过程。</p>
+</li>
+<li><p>为新生对象分配内存，等同于将一块确定大小的内存从 Java 堆中划分出来。使用方法：</p>
+<ol>
+<li>指针碰撞：用过的内存放一边，空闲的内存放一边，中间加一个指针作为分界点的指示器，分配仅需将指针移动。</li>
+<li>空闲列表：维护一个可用的内存块，从中分配。</li>
+</ol>
+<p>使用二者是看 Java 堆是否规整决定的。</p>
+<p>有一个问题需要考虑，创建对象过于频繁，即使只是修改指针位置也有可能出现线程不安全的情况。实际中 JVM 采用 CAS 配上失败重试的方法保证更新操作的原子性；另一种是把内存分配的动作按照线程划分在不同的空间进行，即每一个线程在 Java 堆中预先分配一小块内存，称为本地线程分配缓存（Thread Local Allocation Buffer，TLAB）。线程分配各自的 TLAB，只有 TLAB 用完并分配新的 TLAB 时，才需要同步锁定。使用 <code>-XX:+/-UseTLAB </code> 参数来设定是否使用。</p>
+</li>
+<li><p>JVM 需要将分配到的内存空间都初始化为零值（不包括对象头），如果使用 TLAB，这一工作过程也可以提前至 TLAB 分配时进行。</p>
+</li>
+<li><p>虚拟机要对对象进行必要的设置（对象是哪个类的实例，如何才能找到类的元信息，对象 hash code，对象 GC 分代年龄等信息）。存放于对象头(Object Header)中。</p>
+</li>
+<li><p>执行 new 指令之后会接着执行 <code>&lt;init&gt;</code> 方法，将对象初始化。</p>
+</li>
+</ol>
+<h4 id="对象的内存布局"><a href="#对象的内存布局" class="headerlink" title="对象的内存布局"></a>对象的内存布局</h4><p><img src="https://github.com/BingLau7/blog/blob/master/images/blog_27/2.png?raw=true" alt="内存布局"></p>
+<h5 id="对象头："><a href="#对象头：" class="headerlink" title="对象头："></a>对象头：</h5><ul>
+<li><p>存储对象自身的运行时数据，如哈希码、GC分代年龄等。长度在32位和64位的虚拟机中，分别为32bit、 64bit,官方称它为“Mark Word”</p>
+</li>
+<li><p>类型指针，对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。</p>
+</li>
+</ul>
+<p>注：如果对象是一个java数组，对象头中还必须有一块记录数据长度的数据。</p>
+<h5 id="实例数据"><a href="#实例数据" class="headerlink" title="实例数据"></a>实例数据</h5><p>对象真正存储的有用信息，也是程序中定义的各种类型的字段内容。</p>
+<h5 id="对齐填充"><a href="#对齐填充" class="headerlink" title="对齐填充"></a>对齐填充</h5><p>由于HotSpot虚拟机要求对象的起始地址必须是8字节的整数倍，通俗的说，就是对象大小必须是8字节的整数倍。对象头正好是8字节的倍数。当实例数据部分没有对齐时，需要通过对齐填充来补全。</p>
+<h4 id="对象的定位访问"><a href="#对象的定位访问" class="headerlink" title="对象的定位访问"></a>对象的定位访问</h4><p>建立对象是为了适用对象，Java通过栈上的引用来引用堆中的对象，引用通过何种方式去定位、访问堆中的对象的具体位置取决于虚拟机的实现。目前主流的访问方式有两种：使用句柄和直接指针。 </p>
+<p>由于 HotSpot 是使用直接指针访问，所以这里指介绍直接指针：</p>
+<p>如果是指针访问方式，java堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，而reference中存储的直接就是对象地址。</p>
+<p><img src="https://github.com/BingLau7/blog/blob/master/images/blog_27/3.png?raw=true" alt="直接指针"></p>
+<p>优点：速度相对更快。</p>
+<h4 id="关于一个程序的创建过程"><a href="#关于一个程序的创建过程" class="headerlink" title="关于一个程序的创建过程"></a>关于一个程序的创建过程</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> io.github.binglau.jvm;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 文件描述:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ClassCreateProcessTest</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type">B</span> <span class="variable">b</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">B</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="type">C</span> <span class="variable">c</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">C</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;A created&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ClassCreateProcessTest</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">ClassCreateProcessTest</span> <span class="variable">a</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassCreateProcessTest</span>();</span><br><span class="line">        System.out.println(a);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span>&#123;</span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;B created&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//some fields.</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">C</span> &#123;</span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;C created&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//some fields.</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">B created</span></span><br><span class="line"><span class="comment">A created</span></span><br><span class="line"><span class="comment">C created</span></span><br><span class="line"><span class="comment">io.github.binglau.jvm.ClassCreateProcessTest@d716361</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line">binglau<span class="meta">@BingLaudeMBP</span> ~/c/c/J/basic&gt; javap -verbose target/classes/io/github/binglau/jvm/ClassCreateProcessTest.<span class="keyword">class</span> </span><br><span class="line"><span class="title class_">Classfile</span> /Users/binglau/code/cradle/Java-demo/basic/target/classes/io/github/binglau/jvm/ClassCreateProcessTest.<span class="keyword">class</span></span><br><span class="line">  <span class="title class_">Last</span> modified <span class="number">2017</span>-<span class="number">10</span>-<span class="number">17</span>; size <span class="number">938</span> bytes</span><br><span class="line">  MD5 checksum 3197a5d18757ab40c96b935f44cba193</span><br><span class="line">  Compiled from <span class="string">&quot;ClassCreateProcessTest.java&quot;</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">io</span>.github.binglau.jvm.ClassCreateProcessTest</span><br><span class="line">  minor version: <span class="number">0</span></span><br><span class="line">  major version: <span class="number">52</span></span><br><span class="line">  flags: ACC_PUBLIC, ACC_SUPER</span><br><span class="line">Constant pool:</span><br><span class="line">   #<span class="number">1</span> = Methodref          #<span class="number">14.</span>#<span class="number">34</span>        <span class="comment">// java/lang/Object.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">   #<span class="number">2</span> = Class              #<span class="number">35</span>            <span class="comment">// io/github/binglau/jvm/C</span></span><br><span class="line">   #<span class="number">3</span> = Methodref          #<span class="number">2.</span>#<span class="number">34</span>         <span class="comment">// io/github/binglau/jvm/C.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">   #<span class="number">4</span> = Fieldref           #<span class="number">5.</span>#<span class="number">36</span>         <span class="comment">// io/github/binglau/jvm/ClassCreateProcessTest.c:Lio/github/binglau/jvm/C;</span></span><br><span class="line">   #<span class="number">5</span> = Class              #<span class="number">37</span>            <span class="comment">// io/github/binglau/jvm/ClassCreateProcessTest</span></span><br><span class="line">   #<span class="number">6</span> = Methodref          #<span class="number">5.</span>#<span class="number">34</span>         <span class="comment">// io/github/binglau/jvm/ClassCreateProcessTest.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">   #<span class="number">7</span> = Fieldref           #<span class="number">38.</span>#<span class="number">39</span>        <span class="comment">// java/lang/System.out:Ljava/io/PrintStream;</span></span><br><span class="line">   #<span class="number">8</span> = Methodref          #<span class="number">40.</span>#<span class="number">41</span>        <span class="comment">// java/io/PrintStream.println:(Ljava/lang/Object;)V</span></span><br><span class="line">   #<span class="number">9</span> = Class              #<span class="number">42</span>            <span class="comment">// io/github/binglau/jvm/B</span></span><br><span class="line">  #<span class="number">10</span> = Methodref          #<span class="number">9.</span>#<span class="number">34</span>         <span class="comment">// io/github/binglau/jvm/B.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">  #<span class="number">11</span> = Fieldref           #<span class="number">5.</span>#<span class="number">43</span>         <span class="comment">// io/github/binglau/jvm/ClassCreateProcessTest.b:Lio/github/binglau/jvm/B;</span></span><br><span class="line">  #<span class="number">12</span> = String             #<span class="number">44</span>            <span class="comment">// A created</span></span><br><span class="line">  #<span class="number">13</span> = Methodref          #<span class="number">40.</span>#<span class="number">45</span>        <span class="comment">// java/io/PrintStream.println:(Ljava/lang/String;)V</span></span><br><span class="line">  #<span class="number">14</span> = Class              #<span class="number">46</span>            <span class="comment">// java/lang/Object</span></span><br><span class="line">  #<span class="number">15</span> = Utf8               b</span><br><span class="line">  #<span class="number">16</span> = Utf8               Lio/github/binglau/jvm/B;</span><br><span class="line">  #<span class="number">17</span> = Utf8               c</span><br><span class="line">  #<span class="number">18</span> = Utf8               Lio/github/binglau/jvm/C;</span><br><span class="line">  #<span class="number">19</span> = Utf8               &lt;init&gt;</span><br><span class="line">  #<span class="number">20</span> = Utf8               ()V</span><br><span class="line">  #<span class="number">21</span> = Utf8               Code</span><br><span class="line">  #<span class="number">22</span> = Utf8               LineNumberTable</span><br><span class="line">  #<span class="number">23</span> = Utf8               LocalVariableTable</span><br><span class="line">  #<span class="number">24</span> = Utf8               <span class="built_in">this</span></span><br><span class="line">  #<span class="number">25</span> = Utf8               Lio/github/binglau/jvm/ClassCreateProcessTest;</span><br><span class="line">  #<span class="number">26</span> = Utf8               main</span><br><span class="line">  #<span class="number">27</span> = Utf8               ([Ljava/lang/String;)V</span><br><span class="line">  #<span class="number">28</span> = Utf8               args</span><br><span class="line">  #<span class="number">29</span> = Utf8               [Ljava/lang/String;</span><br><span class="line">  #<span class="number">30</span> = Utf8               a</span><br><span class="line">  #<span class="number">31</span> = Utf8               &lt;clinit&gt;</span><br><span class="line">  #<span class="number">32</span> = Utf8               SourceFile</span><br><span class="line">  #<span class="number">33</span> = Utf8               ClassCreateProcessTest.java</span><br><span class="line">  #<span class="number">34</span> = NameAndType        #<span class="number">19</span>:#<span class="number">20</span>        <span class="comment">// &quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">  #<span class="number">35</span> = Utf8               io/github/binglau/jvm/C</span><br><span class="line">  #<span class="number">36</span> = NameAndType        #<span class="number">17</span>:#<span class="number">18</span>        <span class="comment">// c:Lio/github/binglau/jvm/C;</span></span><br><span class="line">  #<span class="number">37</span> = Utf8               io/github/binglau/jvm/ClassCreateProcessTest</span><br><span class="line">  #<span class="number">38</span> = Class              #<span class="number">47</span>            <span class="comment">// java/lang/System</span></span><br><span class="line">  #<span class="number">39</span> = NameAndType        #<span class="number">48</span>:#<span class="number">49</span>        <span class="comment">// out:Ljava/io/PrintStream;</span></span><br><span class="line">  #<span class="number">40</span> = Class              #<span class="number">50</span>            <span class="comment">// java/io/PrintStream</span></span><br><span class="line">  #<span class="number">41</span> = NameAndType        #<span class="number">51</span>:#<span class="number">52</span>        <span class="comment">// println:(Ljava/lang/Object;)V</span></span><br><span class="line">  #<span class="number">42</span> = Utf8               io/github/binglau/jvm/B</span><br><span class="line">  #<span class="number">43</span> = NameAndType        #<span class="number">15</span>:#<span class="number">16</span>        <span class="comment">// b:Lio/github/binglau/jvm/B;</span></span><br><span class="line">  #<span class="number">44</span> = Utf8               A created</span><br><span class="line">  #<span class="number">45</span> = NameAndType        #<span class="number">51</span>:#<span class="number">53</span>        <span class="comment">// println:(Ljava/lang/String;)V</span></span><br><span class="line">  #<span class="number">46</span> = Utf8               java/lang/Object</span><br><span class="line">  #<span class="number">47</span> = Utf8               java/lang/System</span><br><span class="line">  #<span class="number">48</span> = Utf8               out</span><br><span class="line">  #<span class="number">49</span> = Utf8               Ljava/io/PrintStream;</span><br><span class="line">  #<span class="number">50</span> = Utf8               java/io/PrintStream</span><br><span class="line">  #<span class="number">51</span> = Utf8               println</span><br><span class="line">  #<span class="number">52</span> = Utf8               (Ljava/lang/Object;)V</span><br><span class="line">  #<span class="number">53</span> = Utf8               (Ljava/lang/String;)V</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">public</span> io.github.binglau.jvm.ClassCreateProcessTest(); <span class="comment">// 在实例创建出来的时候调用，包括调用new操作符；调用Class或Java.lang.reflect.Constructor对象的newInstance()方法；调用任何现有对象的clone()方法；通过java.io.ObjectInputStream类的getObject()方法反序列化。</span></span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_PUBLIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">3</span>, locals=<span class="number">1</span>, args_size=<span class="number">1</span></span><br><span class="line">         <span class="number">0</span>: aload_0</span><br><span class="line">         <span class="number">1</span>: invokespecial #<span class="number">1</span>                  <span class="comment">// Method java/lang/Object.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">         <span class="number">4</span>: aload_0</span><br><span class="line">         <span class="number">5</span>: <span class="keyword">new</span>           #<span class="number">2</span>                  <span class="comment">// class io/github/binglau/jvm/C</span></span><br><span class="line">         <span class="number">8</span>: dup</span><br><span class="line">         <span class="number">9</span>: invokespecial #<span class="number">3</span>                  <span class="comment">// Method io/github/binglau/jvm/C.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">        <span class="number">12</span>: putfield      #<span class="number">4</span>                  <span class="comment">// Field c:Lio/github/binglau/jvm/C;</span></span><br><span class="line">        <span class="number">15</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">15</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">9</span>: <span class="number">4</span></span><br><span class="line">        line <span class="number">15</span>: <span class="number">15</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>      <span class="number">16</span>     <span class="number">0</span>  <span class="built_in">this</span>   Lio/github/binglau/jvm/ClassCreateProcessTest;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(java.lang.String[])</span>;</span><br><span class="line">    descriptor: ([Ljava/lang/String;)V</span><br><span class="line">    flags: ACC_PUBLIC, ACC_STATIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">2</span>, locals=<span class="number">2</span>, args_size=<span class="number">1</span></span><br><span class="line">         <span class="number">0</span>: <span class="keyword">new</span>           #<span class="number">5</span>                  <span class="comment">// class io/github/binglau/jvm/ClassCreateProcessTest</span></span><br><span class="line">         <span class="number">3</span>: dup</span><br><span class="line">         <span class="number">4</span>: invokespecial #<span class="number">6</span>                  <span class="comment">// Method &quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">         <span class="number">7</span>: astore_1</span><br><span class="line">         <span class="number">8</span>: getstatic     #<span class="number">7</span>                  <span class="comment">// Field java/lang/System.out:Ljava/io/PrintStream;</span></span><br><span class="line">        <span class="number">11</span>: aload_1</span><br><span class="line">        <span class="number">12</span>: invokevirtual #<span class="number">8</span>                  <span class="comment">// Method java/io/PrintStream.println:(Ljava/lang/Object;)V</span></span><br><span class="line">        <span class="number">15</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">18</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">19</span>: <span class="number">8</span></span><br><span class="line">        line <span class="number">20</span>: <span class="number">15</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>      <span class="number">16</span>     <span class="number">0</span>  args   [Ljava/lang/String;</span><br><span class="line">            <span class="number">8</span>       <span class="number">8</span>     <span class="number">1</span>     a   Lio/github/binglau/jvm/ClassCreateProcessTest;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;&#125;;      <span class="comment">// 在jvm第一次加载class文件时调用，包括静态变量初始化语句和静态块的执行</span></span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_STATIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">2</span>, locals=<span class="number">0</span>, args_size=<span class="number">0</span></span><br><span class="line">         <span class="number">0</span>: <span class="keyword">new</span>           #<span class="number">9</span>                  <span class="comment">// class io/github/binglau/jvm/B</span></span><br><span class="line">         <span class="number">3</span>: dup</span><br><span class="line">         <span class="number">4</span>: invokespecial #<span class="number">10</span>                 <span class="comment">// Method io/github/binglau/jvm/B.&quot;&lt;init&gt;&quot;:()V</span></span><br><span class="line">         <span class="number">7</span>: putstatic     #<span class="number">11</span>                 <span class="comment">// Field b:Lio/github/binglau/jvm/B;</span></span><br><span class="line">        <span class="number">10</span>: getstatic     #<span class="number">7</span>                  <span class="comment">// Field java/lang/System.out:Ljava/io/PrintStream;</span></span><br><span class="line">        <span class="number">13</span>: ldc           #<span class="number">12</span>                 <span class="comment">// String A created</span></span><br><span class="line">        <span class="number">15</span>: invokevirtual #<span class="number">13</span>                 <span class="comment">// Method java/io/PrintStream.println:(Ljava/lang/String;)V</span></span><br><span class="line">        <span class="number">18</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">8</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">12</span>: <span class="number">10</span></span><br><span class="line">        line <span class="number">13</span>: <span class="number">18</span></span><br><span class="line">&#125;</span><br><span class="line">SourceFile: <span class="string">&quot;ClassCreateProcessTest.java&quot;</span></span><br><span class="line">binglau<span class="meta">@BingLaudeMBP</span> ~/c/c/J/basic&gt; </span><br></pre></td></tr></table></figure>
+
+<p>static的方法其实是<code>&lt;clinit&gt;</code>方法，在 <code>&lt;init&gt;</code> 也就是实例化之前执行，所有 先 new B 然后这边调用  #7 并 ldc 也就是其中的 static {} 方法中的 sout 执行 打印出  String A created，此时还没有对 A 进行初始化，A 初始化时候创建了 C。</p>
+<p>所以 B 是在 3 时候创建的，C 是在 5 创建的，A 是在 5之后创建完成的。</p>
+<h3 id="可能出现-StackOverflowError-处"><a href="#可能出现-StackOverflowError-处" class="headerlink" title="可能出现 StackOverflowError 处"></a>可能出现 StackOverflowError 处</h3><h4 id="虚拟机（本地方法）栈中出现："><a href="#虚拟机（本地方法）栈中出现：" class="headerlink" title="虚拟机（本地方法）栈中出现："></a>虚拟机（本地方法）栈中出现：</h4><ul>
+<li>线程请求的栈深度大于虚拟机所允许的深度</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment"> * 虚拟机栈和本地方法栈溢出</span></span><br><span class="line"><span class="comment"> * VM Args: -Xss128k </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Administrator </span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> */</span>  </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">JavaVMStackSOF</span> &#123;  </span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">stackLength</span> <span class="operator">=</span> <span class="number">1</span>;  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">stackLeak</span><span class="params">()</span> &#123;  </span><br><span class="line">        stackLength++;  </span><br><span class="line">        stackLeak();  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable&#123;  </span><br><span class="line">        <span class="type">JavaVMStackSOF</span> <span class="variable">oom</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JavaVMStackSOF</span>();  </span><br><span class="line">        <span class="keyword">try</span> &#123;  </span><br><span class="line">            oom.stackLeak();  </span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;  </span><br><span class="line">            System.out.println(<span class="string">&quot;stack length: &quot;</span> + oom.stackLength);  </span><br><span class="line">            <span class="keyword">throw</span> e;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<h3 id="可能出现-OutOfMemoryError-处"><a href="#可能出现-OutOfMemoryError-处" class="headerlink" title="可能出现 OutOfMemoryError 处"></a>可能出现 OutOfMemoryError 处</h3><h4 id="虚拟机（本地方法）栈中出现：-1"><a href="#虚拟机（本地方法）栈中出现：-1" class="headerlink" title="虚拟机（本地方法）栈中出现："></a>虚拟机（本地方法）栈中出现：</h4><ul>
+<li>如果虚拟机栈可以动态扩展，扩展时无法申请到足够的内存（实验不出来，如果是不断创建线程可以，但是这与栈空间十分足够大不存在关系，而是与操作系统对进程分配内存限制有关。）</li>
+</ul>
+<h4 id="堆："><a href="#堆：" class="headerlink" title="堆："></a>堆：</h4><ul>
+<li>在堆中没有内存完成实例分配，并且堆也无法再扩展时</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.ArrayList;  </span><br><span class="line"><span class="keyword">import</span> java.util.List;  </span><br><span class="line">  </span><br><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment"> * Java堆用于存储对象实例，我们只要不断创建对象，并且保证GC Roots到对象之间有可达路径来避免GC清除这些对象，就会在对象数量到达最大堆的容量限制后产生内存溢出异常。</span></span><br><span class="line"><span class="comment"> * VM Args: -Xms10m -Xmx10m -XX:+HeapDumpOnOutOfMemoryError </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Administrator </span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> */</span>  </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HeapOOM</span> &#123;  </span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">OOMObject</span>&#123;  </span><br><span class="line">        <span class="keyword">private</span> String name;  </span><br><span class="line">        <span class="keyword">public</span> <span class="title function_">OOMObject</span><span class="params">(String name)</span> &#123;  </span><br><span class="line">            <span class="built_in">this</span>.name = name;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;  </span><br><span class="line">        List&lt;OOMObject&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;OOMObject&gt;();  </span><br><span class="line">        <span class="type">long</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>;  </span><br><span class="line">        <span class="keyword">while</span>(<span class="literal">true</span>) &#123;  </span><br><span class="line">            list.add(<span class="keyword">new</span> <span class="title class_">OOMObject</span>(<span class="string">&quot;IpConfig...&quot;</span> + i++));  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<h4 id="方法区-运行时常量池"><a href="#方法区-运行时常量池" class="headerlink" title="方法区 &amp; 运行时常量池"></a>方法区 &amp; 运行时常量池</h4><ul>
+<li>无法满足内存分配需求</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.ArrayList;  </span><br><span class="line"><span class="keyword">import</span> java.util.List;  </span><br><span class="line">  </span><br><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment"> * 方法区、运行时常量池溢出</span></span><br><span class="line"><span class="comment"> * 方法区用于存放Class的相关信息，如类名、访问修饰符、常量池、字段描述符、方法描述等。对于这个区域的测试，</span></span><br><span class="line"><span class="comment"> * 基本的思路是运行时产生大量的类去填满方法区，直到溢出。比如动态代理会生成动态类。</span></span><br><span class="line"><span class="comment"> * 运行时常量池分配在方法区内，可以通过 -XX:PermSize和 -XX:MaxPermSize限制方法区大小，从而间接限制其中常量池的容量。</span></span><br><span class="line"><span class="comment"> * VM Args: -XX:PermSize=10M -XX:MaxPermSize=10M </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Administrator </span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> */</span>  </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RuntimeConstantPoolOOM</span> &#123;  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;  </span><br><span class="line">        <span class="comment">// 使用List保持着常量池引用，避免Full GC回收常量池行为  </span></span><br><span class="line">        List&lt;String&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;String&gt;();  </span><br><span class="line">        <span class="comment">// 10MB的PermSize在integer范围内足够产生OOM了  </span></span><br><span class="line">        <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>;  </span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;  </span><br><span class="line">            list.add(String.valueOf(i++).intern());  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<h4 id="直接内存："><a href="#直接内存：" class="headerlink" title="直接内存："></a>直接内存：</h4><ul>
+<li>本机内存限制，这个调整  <code>-Xmx</code> 也没用，直接内存动态扩展时出现</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment"> * DirectMemory容量可以通过-XX:MaxDirectMemorySize指定，如果不指定，则默认与Java堆的最大值-Xmx指定一样。</span></span><br><span class="line"><span class="comment"> * VM Args: -Xmx20M -XX:MaxDirectMemorySize=10M </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Administrator </span></span><br><span class="line"><span class="comment"> */</span>  </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DirectMemoryOOM</span> &#123;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">_1MB</span> <span class="operator">=</span> <span class="number">1024</span> * <span class="number">1024</span>;  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;  </span><br><span class="line">        <span class="type">Field</span> <span class="variable">unsafeField</span> <span class="operator">=</span> Unsafe.class.getDeclaredFields()[<span class="number">0</span>];  </span><br><span class="line">        unsafeField.setAccessible(<span class="literal">true</span>);  </span><br><span class="line">        <span class="type">Unsafe</span> <span class="variable">unsafe</span> <span class="operator">=</span> (Unsafe) unsafeField.get(<span class="literal">null</span>);  </span><br><span class="line">        <span class="keyword">while</span>(<span class="literal">true</span>) &#123;  </span><br><span class="line">            unsafe.allocateMemory(_1MB);  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+
+<h4 id="OOM-时-dump-日志"><a href="#OOM-时-dump-日志" class="headerlink" title="OOM 时 dump 日志"></a>OOM 时 dump 日志</h4><p><code>-XX:+HeapDumpOnOutOfMemoryError</code></p>
+<h3 id="参考书目"><a href="#参考书目" class="headerlink" title="参考书目"></a>参考书目</h3><p>《深入理解 Java 虚拟机》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/JVM/" rel="tag"># JVM</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/09/21/Akka-%E5%AE%9E%E4%BE%8B/" rel="prev" title="Akka 实例">
+                  <i class="fa fa-angle-left"></i> Akka 实例
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/10/23/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E4%B8%8E%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E7%AD%96%E7%95%A5/" rel="next" title="垃圾回收与内存分配策略">
+                  垃圾回收与内存分配策略 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
