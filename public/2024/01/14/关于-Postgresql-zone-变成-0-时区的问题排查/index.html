@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="背景 使用 Postgresql Jdbc Driver 读取大量数据 12345&lt;dependency&gt;    &lt;groupId&gt;org.postgresql&lt;&#x2F;groupId&gt;    &lt;artifactId&gt;postgresql&lt;&#x2F;artifactId&gt;    &lt;version&gt;42.6.0&lt;&#x2F;version&gt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于 Postgresql zone 变成 0 时区的问题排查">
+<meta property="og:url" content="http://example.com/2024/01/14/%E5%85%B3%E4%BA%8E-Postgresql-zone-%E5%8F%98%E6%88%90-0-%E6%97%B6%E5%8C%BA%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="背景 使用 Postgresql Jdbc Driver 读取大量数据 12345&lt;dependency&gt;    &lt;groupId&gt;org.postgresql&lt;&#x2F;groupId&gt;    &lt;artifactId&gt;postgresql&lt;&#x2F;artifactId&gt;    &lt;version&gt;42.6.0&lt;&#x2F;version&gt;">
+<meta property="og:locale">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2024/png/320642/1705241740865-c3c6739e-fd8b-4e58-823b-d7c5f3c64d94.png#averageHue=%23dadbda&clientId=u5896b1bb-f391-4&from=paste&height=785&id=u615f9dea&originHeight=1570&originWidth=3002&originalType=binary&ratio=2&rotation=0&showTitle=false&size=1177457&status=done&style=none&taskId=u5d7cb4a5-61b1-496a-8ba8-9404edbcfc5&title=&width=1501">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_1.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_2.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_3.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_4.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_5.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_6.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_7.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_8.png">
+<meta property="og:image" content="http://example.com/images/pg_time_zone/image_9.png">
+<meta property="article:published_time" content="2024-01-14T15:23:43.000Z">
+<meta property="article:modified_time" content="2024-01-14T15:38:18.892Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="Postgresql">
+<meta property="article:tag" content="问题排查">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2024/png/320642/1705241740865-c3c6739e-fd8b-4e58-823b-d7c5f3c64d94.png#averageHue=%23dadbda&clientId=u5896b1bb-f391-4&from=paste&height=785&id=u615f9dea&originHeight=1570&originWidth=3002&originalType=binary&ratio=2&rotation=0&showTitle=false&size=1177457&status=done&style=none&taskId=u5d7cb4a5-61b1-496a-8ba8-9404edbcfc5&title=&width=1501">
+
+
+<link rel="canonical" href="http://example.com/2024/01/14/%E5%85%B3%E4%BA%8E-Postgresql-zone-%E5%8F%98%E6%88%90-0-%E6%97%B6%E5%8C%BA%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2024/01/14/%E5%85%B3%E4%BA%8E-Postgresql-zone-%E5%8F%98%E6%88%90-0-%E6%97%B6%E5%8C%BA%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/","path":"2024/01/14/关于-Postgresql-zone-变成-0-时区的问题排查/","title":"关于 Postgresql zone 变成 0 时区的问题排查"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>关于 Postgresql zone 变成 0 时区的问题排查 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">问题描述</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E6%80%9D%E8%B7%AF"><span class="nav-number">2.</span> <span class="nav-text">排查问题思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E6%98%AF-0-%E6%97%B6%E5%8C%BA%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">为什么会是 0 时区？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E6%98%AF%E6%89%80%E6%9C%89%E7%9A%84%E6%95%B0%E6%8D%AE%E9%83%BD%E5%87%BA%E9%94%99%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">为什么不是所有的数据都出错？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3"><span class="nav-number">3.</span> <span class="nav-text">最后怎么解决?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/14/%E5%85%B3%E4%BA%8E-Postgresql-zone-%E5%8F%98%E6%88%90-0-%E6%97%B6%E5%8C%BA%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="关于 Postgresql zone 变成 0 时区的问题排查 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          关于 Postgresql zone 变成 0 时区的问题排查
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2024-01-14 23:23:43 / Modified: 23:38:18" itemprop="dateCreated datePublished" datetime="2024-01-14T23:23:43+08:00">2024-01-14</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><ul>
+<li><p>使用 Postgresql Jdbc Driver 读取大量数据</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.postgresql&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;postgresql&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">42.6</span><span class="number">.0</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>读取的数据中包含 timestamp with time zone 与 time with time zone</p>
+</li>
+<li><p>Pg Server 是 +08:00 时区</p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PostgresqlReadZoneDemo</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:postgresql://127.0.0.1:xxxx/test&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">USERNAME</span> <span class="operator">=</span> <span class="string">&quot;username&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">PASSWORD</span> <span class="operator">=</span> <span class="string">&quot;password&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        Class.forName(<span class="string">&quot;org.postgresql.Driver&quot;</span>);</span><br><span class="line">        <span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(URL, USERNAME, PASSWORD);</span><br><span class="line">        initData(conn);</span><br><span class="line">        printData(conn);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">printData</span><span class="params">(Connection conn)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">sqlSelect</span> <span class="operator">=</span> <span class="string">&quot;SELECT id, time_with_time_zone, timestamp_with_time_zone &quot;</span></span><br><span class="line">            + <span class="string">&quot;FROM test_schema.test_time_zone WHERE id &gt;= ? ORDER BY id LIMIT ?&quot;</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">batchSize</span> <span class="operator">=</span> <span class="number">5</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">lastId</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> (<span class="type">Statement</span> <span class="variable">stmt</span> <span class="operator">=</span> conn.createStatement()) &#123;</span><br><span class="line">            stmt.executeUpdate(<span class="string">&quot;SET TIME ZONE &#x27;+08&#x27;&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">int</span> count;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            count = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(sqlSelect)) &#123;</span><br><span class="line">                ps.setInt(<span class="number">1</span>, lastId + <span class="number">1</span>);</span><br><span class="line">                ps.setInt(<span class="number">2</span>, batchSize);</span><br><span class="line">                System.out.println(ps + <span class="string">&quot;, id = &quot;</span> + (lastId + <span class="number">1</span>) + <span class="string">&quot;, limit = &quot;</span> + batchSize);</span><br><span class="line">                <span class="type">ResultSet</span> <span class="variable">rs</span> <span class="operator">=</span> ps.executeQuery();</span><br><span class="line">                <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">                    lastId = rs.getInt(<span class="string">&quot;id&quot;</span>);</span><br><span class="line">                    System.out.println(rs.getInt(<span class="string">&quot;id&quot;</span>) + <span class="string">&quot;, &quot;</span> + rs.getString(<span class="string">&quot;time_with_time_zone&quot;</span>)</span><br><span class="line">                        + <span class="string">&quot;, &quot;</span> + rs.getString(<span class="string">&quot;timestamp_with_time_zone&quot;</span>));</span><br><span class="line">                    count++;</span><br><span class="line">                &#125;</span><br><span class="line">                rs.close();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">while</span> (count &gt; <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">initData</span><span class="params">(Connection conn)</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        createTable(conn);</span><br><span class="line">        insertData(conn);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">createTable</span><span class="params">(Connection connection)</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">sqlCreateSchema</span> <span class="operator">=</span> <span class="string">&quot;CREATE SCHEMA IF NOT EXISTS test_schema&quot;</span>;</span><br><span class="line">        <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">pstmtCreateSchema</span> <span class="operator">=</span> connection.prepareStatement(sqlCreateSchema)) &#123;</span><br><span class="line">            pstmtCreateSchema.executeUpdate();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">sqlDropTable</span> <span class="operator">=</span> <span class="string">&quot;DROP TABLE IF EXISTS test_schema.test_time_zone&quot;</span>;</span><br><span class="line">        <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">pstmtDropTable</span> <span class="operator">=</span> connection.prepareStatement(sqlDropTable)) &#123;</span><br><span class="line">            pstmtDropTable.executeUpdate();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">sqlCreateTable</span> <span class="operator">=</span> <span class="string">&quot;CREATE TABLE IF NOT EXISTS test_schema.test_time_zone (&quot;</span> +</span><br><span class="line">            <span class="string">&quot;id SERIAL PRIMARY KEY,&quot;</span> +</span><br><span class="line">            <span class="string">&quot;time_with_time_zone TIME WITH TIME ZONE,&quot;</span> +</span><br><span class="line">            <span class="string">&quot;timestamp_with_time_zone TIMESTAMP WITH TIME ZONE)&quot;</span>;</span><br><span class="line">        <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">pstmtCreateTable</span> <span class="operator">=</span> connection.prepareStatement(sqlCreateTable)) &#123;</span><br><span class="line">            pstmtCreateTable.executeUpdate();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">insertData</span><span class="params">(Connection connection)</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="type">AtomicInteger</span> <span class="variable">idCounter</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>();</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">now</span> <span class="operator">=</span> LocalDateTime.now();</span><br><span class="line">        <span class="type">DateTimeFormatter</span> <span class="variable">formatter</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;yyyy-MM-dd HH:mm:ss.SSS&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">sql</span> <span class="operator">=</span> <span class="string">&quot;INSERT INTO test_schema.test_time_zone (id, time_with_time_zone, timestamp_with_time_zone) VALUES (?, ?, ?)&quot;</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">pstmt</span> <span class="operator">=</span> connection.prepareStatement(sql)) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">50</span>; i++) &#123;</span><br><span class="line">                <span class="type">int</span> <span class="variable">id</span> <span class="operator">=</span> idCounter.incrementAndGet();</span><br><span class="line">                <span class="type">LocalTime</span> <span class="variable">timeWithTimeZone</span> <span class="operator">=</span> now.plusHours(i).toLocalTime();</span><br><span class="line">                <span class="type">LocalDateTime</span> <span class="variable">timestampWithTimeZone</span> <span class="operator">=</span> now.plusDays(i);</span><br><span class="line"></span><br><span class="line">                pstmt.setInt(<span class="number">1</span>, id);</span><br><span class="line">                <span class="type">PGobject</span> <span class="variable">timewtz</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PGobject</span>();</span><br><span class="line">                timewtz.setType(<span class="string">&quot;timetz&quot;</span>);</span><br><span class="line">                timewtz.setValue(timeWithTimeZone.format(DateTimeFormatter.ISO_LOCAL_TIME));</span><br><span class="line">                pstmt.setObject(<span class="number">2</span>, timewtz);</span><br><span class="line">                <span class="type">PGobject</span> <span class="variable">timestampwtz</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PGobject</span>();</span><br><span class="line">                timestampwtz.setType(<span class="string">&quot;timestamptz&quot;</span>);</span><br><span class="line">                timestampwtz.setValue(timestampWithTimeZone.format(formatter));</span><br><span class="line">                pstmt.setObject(<span class="number">3</span>, timestampwtz);</span><br><span class="line">                pstmt.addBatch();</span><br><span class="line">            &#125;</span><br><span class="line">            pstmt.executeBatch();</span><br><span class="line">            System.out.println(<span class="string">&quot;All Inserted&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>写入 50 条数据，其中包含 int(主键), time with time zone, timestamp with time zone</li>
+<li><code>set time zone &#39;+08&#39;</code></li>
+<li>分批次(batchSize &#x3D; 5)读取数据<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">0</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">0</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">1</span>, <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">14</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">2</span>, <span class="number">21</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">15</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">3</span>, <span class="number">22</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">16</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">4</span>, <span class="number">23</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">17</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">5</span>, <span class="number">00</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">18</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">6</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">6</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">6</span>, <span class="number">01</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">19</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">7</span>, <span class="number">02</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">20</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">8</span>, <span class="number">03</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">21</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">9</span>, <span class="number">04</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">22</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">10</span>, <span class="number">05</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">23</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">11</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">11</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">11</span>, <span class="number">06</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">24</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">12</span>, <span class="number">07</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">25</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">13</span>, 08:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">26</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">14</span>, 09:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">27</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">15</span>, <span class="number">10</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">28</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">16</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">16</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">16</span>, <span class="number">11</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">29</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">17</span>, <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">30</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">18</span>, <span class="number">13</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">01</span>-<span class="number">31</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">19</span>, <span class="number">14</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">01</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">20</span>, <span class="number">15</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">02</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">21</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">21</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">21</span>, <span class="number">16</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">03</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">22</span>, <span class="number">17</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">04</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">23</span>, <span class="number">18</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">05</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">24</span>, <span class="number">19</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">06</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">25</span>, <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">07</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">26</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">26</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">26</span>, <span class="number">13</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-08 <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">27</span>, <span class="number">14</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-09 <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">28</span>, <span class="number">15</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">10</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">29</span>, <span class="number">16</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">11</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">30</span>, <span class="number">17</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">12</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">31</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">31</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">31</span>, <span class="number">18</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">13</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">32</span>, <span class="number">19</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">14</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">33</span>, <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">15</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">34</span>, <span class="number">21</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">16</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">35</span>, <span class="number">22</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">17</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">36</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">36</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">36</span>, <span class="number">23</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">18</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">37</span>, <span class="number">00</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">19</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">38</span>, <span class="number">01</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">20</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">39</span>, <span class="number">02</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">21</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">40</span>, <span class="number">03</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">22</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">41</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">41</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">41</span>, <span class="number">04</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">23</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">42</span>, <span class="number">05</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">24</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">43</span>, <span class="number">06</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">25</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">44</span>, <span class="number">07</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">26</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">45</span>, 08:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">27</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line">SELECT id, time_with_time_zone, timestamp_with_time_zone FROM test_schema.test_time_zone WHERE id &gt;= <span class="number">46</span> ORDER BY id LIMIT <span class="number">5</span>, id = <span class="number">46</span>, limit = <span class="number">5</span></span><br><span class="line"><span class="number">46</span>, 09:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">28</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">47</span>, <span class="number">10</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">02</span>-<span class="number">29</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">48</span>, <span class="number">11</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">03</span>-<span class="number">01</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">49</span>, <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">03</span>-<span class="number">02</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br><span class="line"><span class="number">50</span>, <span class="number">13</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span>, <span class="number">2024</span>-<span class="number">03</span>-<span class="number">03</span> <span class="number">12</span>:<span class="number">56</span>:<span class="number">13.176</span>+<span class="number">00</span></span><br></pre></td></tr></table></figure>
+结果的 timezone 信息分为了两批<br><code>id &lt;= 25</code>数据是正确的 time zone &#x3D; <code>+08:00</code><br><code>id &gt; 25</code>数据是也是正确的，但是 time zone &#x3D; <code>+00:00</code></li>
+</ol>
+<h2 id="排查问题思路"><a href="#排查问题思路" class="headerlink" title="排查问题思路"></a>排查问题思路</h2><h3 id="为什么会是-0-时区？"><a href="#为什么会是-0-时区？" class="headerlink" title="为什么会是 0 时区？"></a>为什么会是 0 时区？</h3><p>其实这已经是一个查询到中间，已经定位到是 driver 返回返回数据问题时候的场景了。<br>这个时候剩余的工作就是抓包</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo tcpdump -i any -n -w postgres_traffic.pcap <span class="string">&#x27;port 5432&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>抓到的包在 <code>postgres_traffic.pcap</code>中扔到 wireshark 中分析，在比较正确与错误数据的时候可以分析出来点问题<br><img src="https://cdn.nlark.com/yuque/0/2024/png/320642/1705241740865-c3c6739e-fd8b-4e58-823b-d7c5f3c64d94.png#averageHue=%23dadbda&clientId=u5896b1bb-f391-4&from=paste&height=785&id=u615f9dea&originHeight=1570&originWidth=3002&originalType=binary&ratio=2&rotation=0&showTitle=false&size=1177457&status=done&style=none&taskId=u5d7cb4a5-61b1-496a-8ba8-9404edbcfc5&title=&width=1501" alt="image.png"><br>可以从上面解析结果得到(16 进制 byte[] 直接 new String() 是 pg driver 中的文本协议解析逻辑)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">20</span></span><br><span class="line"><span class="number">15</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br><span class="line"><span class="number">2024</span>-<span class="number">02</span>-<span class="number">02</span> <span class="number">20</span>:<span class="number">56</span>:<span class="number">13.176</span>+08</span><br></pre></td></tr></table></figure>
+<p>而在错误 timezone 中可以看到要求返回的 result format 格式已经变为 Binary 了<br><img src="/images/pg_time_zone/image_1.png" alt="image.png"><br>结果也是 binary<br><img src="/images/pg_time_zone/image_2.png" alt="image.png"><br>如果将这个结果带入 pg driver 的解析逻辑中，会发现 server 传递的实际上是 UTC timestamp，而 0 时区则是我们本地设置的时区<br><img src="/images/pg_time_zone/image_3.png" alt="image.png"><br>这个时候问题的推断就到了为什么我们本地是 0 时区的问题上来了<br>通过 <code>PgResultSet#getString</code>中代码可以追下去<br><img src="/images/pg_time_zone/image_4.png" alt="image.png"><br>时区在 pgDriver 中是在 <code>QueryExecutorImpl#receiveParameterStatus</code>中接收到 param 的 <code>TimeZone</code>时候设置的，默认是以本地 JVM 时区为准，然后 <code>set timezone to &#39;+08&#39;</code>会通过 <code>TimestampUtils.parseBackendTimeZone</code> 设置上<br><img src="/images/pg_time_zone/image_5.png" alt="image.png"><br>问题就出在 <code>set timezone to &#39;+08&#39;</code>上<br>在这里面就会发现实际正确的格式应该是 <code>set timezone to &#39;GMT-08&#39;</code>，如果不带 <code>GMT</code>会解析出错，导致最终转换时候成 0 时区数据，而 -08 是 PG 独有的参考 <a target="_blank" rel="noopener" href="http://www.postgres.cn/docs/14/datetime-posix-timezone-specs.html">http://www.postgres.cn/docs/14/datetime-posix-timezone-specs.html</a><br><img src="/images/pg_time_zone/image_6.png" alt="image.png"><br>时区与实际我们认识到的正好相反，东八区是 -08 时区</p>
+<h3 id="为什么不是所有的数据都出错？"><a href="#为什么不是所有的数据都出错？" class="headerlink" title="为什么不是所有的数据都出错？"></a>为什么不是所有的数据都出错？</h3><p>在上述抓包过程中我们可以看到，实际上如果是使用文本协议来传输的数据是没有问题的，而使用二进制传输的话数据会存在问题。<br>问题就在影响二进制协议或文本协议的参数在 pg 中的描述二进制协议是默认开启的<br><img src="/images/pg_time_zone/image_7.png" alt="image.png"><br>不断的 Debug 之后在协议交换的时候发现了一些端倪在 <code>preferQueryMode</code> 这个参数中<br><img src="/images/pg_time_zone/image_8.png" alt="image.png"><br>当 <code>preferQueryMode=extended</code>(默认) 的时候，pg driver 会在执行到五次（默认）相同的 prepareStatement 之后尝试缓存 ps，并将 ps 协议换为 binary 协议与 server 端交互传输，这就导致了在执行五次 SQL 之后返回的结果均是 binary 的协议<br><img src="/images/pg_time_zone/image_9.png" alt="image.png"></p>
+<h2 id="最后怎么解决"><a href="#最后怎么解决" class="headerlink" title="最后怎么解决?"></a>最后怎么解决?</h2><ol>
+<li><code>set timezone to &#39;GMT-8&#39;</code></li>
+<li>或者可以将协议完全更改为文本协议 <code>binaryTransfer=false</code></li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>抓包结合 driver 代码是解决多数复杂数据库问题的良方</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Postgresql/" rel="tag"># Postgresql</a>
+              <a href="/tags/%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" rel="tag"># 问题排查</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/06/08/Datax-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" rel="prev" title="Datax 源码阅读">
+                  <i class="fa fa-angle-left"></i> Datax 源码阅读
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
