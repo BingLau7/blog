@@ -59,7 +59,7 @@ PCollection<DocInfo> docInfos = readRecordFileCollection("/gfs/webdocinfo/part-*
 > FlumeJava能够将这些分散的文件作为一个整体的逻辑PCollection来进行读取和处理，这样简化了对大型分布式数据集的操作
 
 **第二个核心类是PTable<K,V>**，**它代表着一个（可能非常巨大的）不可变的多值映射**，拥有类型为K的键和类型为V的值。PTable<K,V>是PCollection<Pair<K,V>>的子类，实际上它就是一个无序的成对集合。有些FlumeJava操作只适用于成对的PCollection，在Java中我们选择定义一个子类来体现这种抽象；在另一种语言中，PTable<K,V>可能更适合被定义为PCollection<Pair<K,V>>的类型同义词。
-操纵PCollection的主要方式是通过调用其数据并行操作。FlumeJava库只定义了少数几个基本的数据并行操作；其他操作都是基于这些基本操作实现的。核心数据并行基本操作是parallelDo()，它支持对输入PCollection<T>进行逐元素计算，以产生新的输出PCollection<S>。这个操作的主要参数是DoFn<T, S>，一个类似函数的对象，定义了如何将输入PCollection<T>中的每个值映射为在输出PCollection<S>中出现的零个或多个值。它还接受一个指示，说明要作为结果产生的是哪种类型的PCollection或PTable。例如：
+操纵PCollection的主要方式是通过调用其数据并行操作。FlumeJava库只定义了少数几个基本的数据并行操作；其他操作都是基于这些基本操作实现的。核心数据并行基本操作是parallelDo()，它支持对输入PCollection<T>进行逐元素计算，以产生新的输出`PCollection<S>`。这个操作的主要参数是DoFn<T, S>，一个类似函数的对象，定义了如何将输入PCollection<T>中的每个值映射为在输出`PCollection<S>`中出现的零个或多个值。它还接受一个指示，说明要作为结果产生的是哪种类型的PCollection或PTable。例如：
 ```java
 PCollection<String> words = lines.parallelDo(new DoFn<String,String>() {
     void process(String line, EmitFn<String> emitFn) {
