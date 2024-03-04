@@ -121,7 +121,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">57</span>
+          <span class="site-state-item-count">58</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -149,6 +149,106 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/" class="post-title-link" itemprop="url">MySQL优化概要</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-03-11 16:18:14" itemprop="dateCreated datePublished" datetime="2016-03-11T16:18:14+08:00">2016-03-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>首先我们需要明确我们什么时候需要用到数据库：</p>
+<ol>
+<li>当缓存并不能解决你的问题，比如写操作，事务操作</li>
+<li>缓存的创建或过期需要通过数据库。</li>
+</ol>
+<p>其次，我们可能需要一个专业的工具来指导我们优化：<br><code>mysqlreport</code><br>这是作为一个Mysql第三方的状态报告工具，其实就是将一下两行命令所获得的数据以一种更加人性化的方法呈现到我们眼前：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show status;</span><br><span class="line">mysql&gt; show engine innodb status; </span><br></pre></td></tr></table></figure>
+
+<p>你完全可以在自己电脑上先使用这个工具，这时候我们将逐条讲解工具为我们呈现的数据</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2016/03/11/MySQL%E4%BC%98%E5%8C%96%E6%A6%82%E8%A6%81/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 

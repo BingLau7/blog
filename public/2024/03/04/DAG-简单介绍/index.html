@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="文章大纲  介绍 DAG 是什么 介绍 DAG 能解决什么问题，有哪些出名的系统是依赖 DAG 的 介绍 DAG 的实现 介绍 Leetcode 中涉及的 DAG 算法题目">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DAG 简单介绍">
+<meta property="og:url" content="http://example.com/2024/03/04/DAG-%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="文章大纲  介绍 DAG 是什么 介绍 DAG 能解决什么问题，有哪些出名的系统是依赖 DAG 的 介绍 DAG 的实现 介绍 Leetcode 中涉及的 DAG 算法题目">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/images/dag/image_1.png">
+<meta property="og:image" content="http://example.com/images/dag/image_2.png">
+<meta property="og:image" content="http://example.com/images/dag/image_3.png">
+<meta property="article:published_time" content="2024-03-04T14:39:30.000Z">
+<meta property="article:modified_time" content="2024-03-04T14:43:02.249Z">
+<meta property="article:author" content="刘冰鉴">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/dag/image_1.png">
+
+
+<link rel="canonical" href="http://example.com/2024/03/04/DAG-%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2024/03/04/DAG-%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/","path":"2024/03/04/DAG-简单介绍/","title":"DAG 简单介绍"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>DAG 简单介绍 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#DAG-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">DAG 是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">主要解决什么问题？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DAG-%E5%AE%9E%E7%8E%B0%E8%B0%83%E5%BA%A6"><span class="nav-number">3.</span> <span class="nav-text">DAG 实现调度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E-DAG-%E7%9B%B8%E5%85%B3%E7%AE%97%E6%B3%95"><span class="nav-number">4.</span> <span class="nav-text">与 DAG 相关算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8B%93%E6%89%91%E6%8E%92%E5%BA%8F%EF%BC%88Topological-Sorting%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">拓扑排序（Topological Sorting）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E7%9F%AD-%E6%9C%80%E9%95%BF%E8%B7%AF%E5%BE%84%E9%97%AE%E9%A2%98"><span class="nav-number">4.2.</span> <span class="nav-text">最短&#x2F;最长路径问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%88Dynamic-Programming%EF%BC%89"><span class="nav-number">4.3.</span> <span class="nav-text">动态规划（Dynamic Programming）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E5%89%B2%EF%BC%88Graph-Cuts%EF%BC%89"><span class="nav-number">4.4.</span> <span class="nav-text">图割（Graph Cuts）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%BA%E8%BF%9E%E9%80%9A%E5%88%86%E9%87%8F%EF%BC%88Strongly-Connected-Components%EF%BC%89"><span class="nav-number">4.5.</span> <span class="nav-text">强连通分量（Strongly Connected Components）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E6%B5%81%E9%97%AE%E9%A2%98%EF%BC%88Network-Flow%EF%BC%89"><span class="nav-number">4.6.</span> <span class="nav-text">网络流问题（Network Flow）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E6%9E%9A%E4%B8%BE"><span class="nav-number">4.7.</span> <span class="nav-text">路径枚举</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E9%80%92%E9%97%AD%E5%8C%85%EF%BC%88Transitive-Closure%EF%BC%89"><span class="nav-number">4.8.</span> <span class="nav-text">传递闭包（Transitive Closure）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/03/04/DAG-%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="DAG 简单介绍 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DAG 简单介绍
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2024-03-04 22:39:30 / Modified: 22:43:02" itemprop="dateCreated datePublished" datetime="2024-03-04T22:39:30+08:00">2024-03-04</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>文章大纲</p>
+<ul>
+<li>介绍 DAG 是什么</li>
+<li>介绍 DAG 能解决什么问题，有哪些出名的系统是依赖 DAG 的</li>
+<li>介绍 DAG 的实现</li>
+<li>介绍 Leetcode 中涉及的 DAG 算法题目</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="DAG-是什么？"><a href="#DAG-是什么？" class="headerlink" title="DAG 是什么？"></a>DAG 是什么？</h2><p>DAG（有向无环图）是图论中的一个概念，是由边连接的节点组成的图结构，具有以下几个特性：</p>
+<ul>
+<li><strong>有向性</strong>：图中的每条边都有方向，即从一个节点指向另一个节点。</li>
+<li><strong>无环性</strong>：图中不存在环路。换句话说，从任意节点出发沿着边的方向移动，不可能回到起始节点。</li>
+<li><strong>路径</strong>：在DAG中，可以从一个节点出发，沿着有向边行进到达另一个节点，这条行进轨迹称为路径。</li>
+<li><strong>拓扑排序</strong>：由于DAG的无环性质，它可以进行拓扑排序，即可以将所有的节点排列成一个线性序列，使得对于任意一条有向边(u, v)，u在序列中都排在v之前。这是DAG的一个重要特性，广泛应用于任务调度、依赖解析等领域。</li>
+<li><strong>存在起始节点和终止节点</strong>：在DAG中，存在没有入边的节点（入度为0），称为起始节点；存在没有出边的节点（出度为0），称为终止节点。</li>
+<li><strong>子图也是DAG</strong>：DAG的任何子图也都是有向无环图。</li>
+<li><strong>单一路径或多路径</strong>：在DAG中，两个节点之间可能存在一条或多条路径，但由于无环性，这些路径之间不会相交。</li>
+<li><strong>应用广泛</strong>：DAG在计算机科学中应用非常广泛，例如在表达依赖关系、编程中的任务调度、数据处理流程、区块链技术中如以太坊的智能合约执行等。</li>
+<li><strong>无法实现负权重环的检测</strong>：由于DAG不存在环，因此不适用于需要检测负权重环的算法，如Bellman-Ford算法(求解单源最短路径问题)。</li>
+</ul>
+<p>下图存在环状就明显违反了无环要求<br><img src="/images/dag/image_1.png" alt="image.png"><br>下图是无向图，不符合 DAG 定义<br><img src="/images/dag/image_2.png" alt="image.png"><br>下图就是符合 DAG 定义的图模型<br><img src="/images/dag/image_3.png" alt="image.png"><br>其中存在一些重要数据模型<br>Vertex：顶点。A, B, C, D…；一般数据结构模型都是以顶点的方式存储。<br>Edge：边。A-&gt;B，B-&gt;D…；表示执行方向。</p>
+<h2 id="主要解决什么问题？"><a href="#主要解决什么问题？" class="headerlink" title="主要解决什么问题？"></a>主要解决什么问题？</h2><ul>
+<li><strong>数据处理</strong>：比如 Flink，通过 DAG 中的顶点表示处理数据的拓扑</li>
+<li><strong>调度</strong>：常用的调度系统比如 Apache Airflow</li>
+<li><strong>系谱或家谱图</strong>：它用于展示家族成员之间的关系。将家庭成员用图中的点（顶点）表示，而将亲子关系用连线（边）表示，可以清晰地展示出家族成员之间复杂的血缘关系。这在追踪家族疾病史或研究个人社会背景时很有用。</li>
+<li><strong>分布式版本控制系统</strong>：这类系统用于管理和记录软件开发过程中各个版本的变化。在这样的系统中，每个软件版本被表示为图中的一个点，而版本之间的衍生关系则通过线来表示，形成了一个有向无环图，有助于开发者理解和管理代码的变更历史。</li>
+<li><strong>引用图</strong>：在信息科学中，引用图反映了一组文档之间的引用或被引用关系。通过将文档表示为顶点，引用作为边，它能帮助研究人员分析和理解学术论文或文献之间的相互影响和重要性。</li>
+<li><strong>贝叶斯网络</strong>：它是一种用于表示变量之间依赖关系的概率模型，其中的有向无环图用于直观表达变量之间的条件依赖。该模型在统计学、机器学习和人工智能等领域有广泛的应用，尤其是在进行因果推断和决策支持时非常有用。</li>
+<li><strong>数据压缩</strong>：在这个应用中，有向无环图用于高效地表示一系列数据，特别是当这些数据序列中存在共享的子序列时。通过将这些共享子序列表示为图中的结构，可以减少存储和传输所需的数据量，从而实现压缩。</li>
+</ul>
+<h2 id="DAG-实现调度"><a href="#DAG-实现调度" class="headerlink" title="DAG 实现调度"></a>DAG 实现调度</h2><p>Executor 表示执行节点</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Executor</span> &#123;</span><br><span class="line">    <span class="type">boolean</span> <span class="title function_">execute</span><span class="params">()</span>;</span><br><span class="line">    String <span class="title function_">getName</span><span class="params">()</span>;</span><br><span class="line">    <span class="type">long</span> <span class="title function_">getId</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Executor 实现类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Task</span> <span class="keyword">implements</span> <span class="title class_">Executor</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">long</span> id;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String name;</span><br><span class="line">    <span class="keyword">private</span> TaskStatus status;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Task</span><span class="params">(<span class="type">long</span> id, String name)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = id;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.status = TaskStatus.INIT;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">execute</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Task id: [&quot;</span> + id + <span class="string">&quot;], &quot;</span> + <span class="string">&quot;task name: [&quot;</span> + name +<span class="string">&quot;] is running&quot;</span>);</span><br><span class="line">        <span class="built_in">this</span>.status = TaskStatus.RUNNING;</span><br><span class="line">        <span class="comment">// 实际工作</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">hasExecuted</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> status == TaskStatus.RUNNING;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">getId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getName</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> TaskStatus <span class="title function_">getStatus</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> status;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Task&#123;&quot;</span> + <span class="string">&quot;id=&quot;</span> + id + <span class="string">&quot;, name=&#x27;&quot;</span> + name + <span class="string">&#x27;\&#x27;&#x27;</span> + <span class="string">&quot;, status=&quot;</span> + status + <span class="string">&#x27;&#125;&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>图实现</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.google.common.base.Preconditions;</span><br><span class="line"><span class="keyword">import</span> com.google.common.graph.GraphBuilder;</span><br><span class="line"><span class="keyword">import</span> com.google.common.graph.MutableGraph;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Set;</span><br><span class="line"><span class="keyword">import</span> java.util.stream.Collectors;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Digraph</span> &#123;</span><br><span class="line">    <span class="comment">// 借助 guava 来构成图</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> MutableGraph&lt;Executor&gt; graph;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">Executor</span> <span class="variable">startTask</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Digraph</span><span class="params">()</span> &#123;</span><br><span class="line">        graph = GraphBuilder.directed().build();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 添加任务节点</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addVertex</span><span class="params">(Executor task, Executor prevTask)</span> &#123;</span><br><span class="line">        graph.addNode(task);</span><br><span class="line">        <span class="keyword">if</span> (prevTask != <span class="literal">null</span>) &#123;</span><br><span class="line">            Preconditions.checkArgument(startTask != <span class="literal">null</span>);</span><br><span class="line">            graph.putEdge(prevTask, task);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            startTask = task;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 返回起始任务，可以通过 inDegree 判断但是需要遍历所有 nodes</span></span><br><span class="line">    <span class="keyword">public</span> Executor <span class="title function_">getStartTask</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> startTask;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取后续可以执行的任务</span></span><br><span class="line">    <span class="keyword">public</span> Set&lt;Executor&gt; <span class="title function_">getNextTasks</span><span class="params">(Executor task)</span> &#123;</span><br><span class="line">        Set&lt;Executor&gt; successors = graph.successors(task);</span><br><span class="line">        <span class="comment">// 仅入度为 1 的才具备执行条件，表示前置任务完成</span></span><br><span class="line">        <span class="keyword">return</span> successors.stream().filter(v -&gt; graph.inDegree(v) == <span class="number">1</span>).collect(Collectors.toSet());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果成功了需要删除节点，减少后续节点的入度，当一个任务依赖多个节点完成时这是判断的依据</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">success</span><span class="params">(Executor task)</span> &#123;</span><br><span class="line">        graph.removeNode(task);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 是否是结束节点</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isEnd</span><span class="params">(Executor task)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> graph.outDegree(task) == <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>调度实现</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Scheduler</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">schedule</span><span class="params">(Digraph digraph)</span> &#123;</span><br><span class="line">        <span class="type">Executor</span> <span class="variable">startTask</span> <span class="operator">=</span> digraph.getStartTask();</span><br><span class="line">        <span class="keyword">if</span> (startTask == <span class="literal">null</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;No more tasks to execute&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Set&lt;Executor&gt; readyTasks = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">        readyTasks.add(startTask);</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">            Set&lt;Executor&gt; nexts = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">            <span class="type">boolean</span> <span class="variable">isEnd</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">            <span class="comment">// 实际执行可以并发执行，并发需要确保下面操作都是并发安全的</span></span><br><span class="line">            <span class="keyword">for</span> (Executor task : readyTasks) &#123;</span><br><span class="line">                <span class="keyword">if</span> (task.execute()) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;Task &quot;</span> + task.getName() + <span class="string">&quot; is executed&quot;</span>);</span><br><span class="line">                    nexts.addAll(digraph.getNextTasks(task));</span><br><span class="line">                    isEnd = isEnd &amp;&amp; digraph.isEnd(task);</span><br><span class="line">                    digraph.success(task);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (isEnd) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            readyTasks = nexts;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>验证</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *   -&gt; 2 -&gt; 4 -&gt;</span></span><br><span class="line"><span class="comment">     * 1              6</span></span><br><span class="line"><span class="comment">     *   -&gt; 3 -&gt; 5 -&gt;</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Digraph</span> <span class="variable">digraph</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Digraph</span>();</span><br><span class="line">    <span class="type">Task</span> <span class="variable">task1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">1L</span>, <span class="string">&quot;task1&quot;</span>);</span><br><span class="line">    <span class="type">Task</span> <span class="variable">task2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">2L</span>, <span class="string">&quot;task2&quot;</span>);</span><br><span class="line">    <span class="type">Task</span> <span class="variable">task3</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">3L</span>, <span class="string">&quot;task3&quot;</span>);</span><br><span class="line">    <span class="type">Task</span> <span class="variable">task4</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">4L</span>, <span class="string">&quot;task4&quot;</span>);</span><br><span class="line">    <span class="type">Task</span> <span class="variable">task5</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">5L</span>, <span class="string">&quot;task5&quot;</span>);</span><br><span class="line">    <span class="type">Task</span> <span class="variable">task6</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">6L</span>, <span class="string">&quot;task6&quot;</span>);</span><br><span class="line">    digraph.addVertex(task1, <span class="literal">null</span>);</span><br><span class="line">    digraph.addVertex(task2, task1);</span><br><span class="line">    digraph.addVertex(task3, task1);</span><br><span class="line">    digraph.addVertex(task4, task2);</span><br><span class="line">    digraph.addVertex(task5, task3);</span><br><span class="line">    digraph.addVertex(task6, task3);</span><br><span class="line">    digraph.addVertex(task6, task4);</span><br><span class="line">    <span class="type">Scheduler</span> <span class="variable">scheduler</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Scheduler</span>();</span><br><span class="line">    scheduler.schedule(digraph);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Task id: [<span class="number">1</span>], task name: [task1] is running</span><br><span class="line">Task task1 is executed</span><br><span class="line">Task id: [<span class="number">2</span>], task name: [task2] is running</span><br><span class="line">Task task2 is executed</span><br><span class="line">Task id: [<span class="number">3</span>], task name: [task3] is running</span><br><span class="line">Task task3 is executed</span><br><span class="line">Task id: [<span class="number">5</span>], task name: [task5] is running</span><br><span class="line">Task task5 is executed</span><br><span class="line">Task id: [<span class="number">4</span>], task name: [task4] is running</span><br><span class="line">Task task4 is executed</span><br><span class="line">Task id: [<span class="number">6</span>], task name: [task6] is running</span><br><span class="line">Task task6 is executed</span><br></pre></td></tr></table></figure>
+<h2 id="与-DAG-相关算法"><a href="#与-DAG-相关算法" class="headerlink" title="与 DAG 相关算法"></a>与 DAG 相关算法</h2><h3 id="拓扑排序（Topological-Sorting）"><a href="#拓扑排序（Topological-Sorting）" class="headerlink" title="拓扑排序（Topological Sorting）"></a>拓扑排序（Topological Sorting）</h3><p>拓扑排序是将有向无环图的顶点排成一个线性序列，使得对图中的任意两个顶点 u 和 v，若存在边 u -&gt; v，则 u 在这个序列中出现在 v 之前。<strong>常用的拓扑排序算法有 Kahn 算法和 DFS（深度优先搜索）算法。</strong></p>
+<h3 id="最短-最长路径问题"><a href="#最短-最长路径问题" class="headerlink" title="最短&#x2F;最长路径问题"></a>最短&#x2F;最长路径问题</h3><p>在 DAG 中，可以使用动态规划方法求解单源最短路径或最长路径问题，这通常涉及先进行拓扑排序，然后在排序后的顺序中依次计算每个顶点的最短&#x2F;最长路径长度。</p>
+<h3 id="动态规划（Dynamic-Programming）"><a href="#动态规划（Dynamic-Programming）" class="headerlink" title="动态规划（Dynamic Programming）"></a>动态规划（Dynamic Programming）</h3><p>DAG 通常与动态规划问题联系紧密，因为许多动态规划问题可以表示为 DAG，其中每个顶点代表一个状态，而边代表从一个状态到另一个状态的转换。</p>
+<h3 id="图割（Graph-Cuts）"><a href="#图割（Graph-Cuts）" class="headerlink" title="图割（Graph Cuts）"></a>图割（Graph Cuts）</h3><p>在图像处理、计算机视觉和网络流等领域中，经常需要找到图的割，将图分割成不相交的子集。最小割问题是找到一种边的分割方式，使得割的权重最小，并且分割后图的两个子集满足某些特定的条件。</p>
+<h3 id="强连通分量（Strongly-Connected-Components）"><a href="#强连通分量（Strongly-Connected-Components）" class="headerlink" title="强连通分量（Strongly Connected Components）"></a>强连通分量（Strongly Connected Components）</h3><p>强连通分量是有向图的最大子图，在该子图中，任意一对顶点都是相互可达的。Kosaraju算法、Tarjan算法和Gabow算法是求解强连通分量的几种经典算法。</p>
+<h3 id="网络流问题（Network-Flow）"><a href="#网络流问题（Network-Flow）" class="headerlink" title="网络流问题（Network Flow）"></a>网络流问题（Network Flow）</h3><p>最大流问题是网络流问题的一种，用于寻找在保留容量限制的前提下，从源点到汇点的最大可能流量。Ford-Fulkerson 算法和 Edmonds-Karp 算法是解决最大流问题的著名算法。</p>
+<h3 id="路径枚举"><a href="#路径枚举" class="headerlink" title="路径枚举"></a>路径枚举</h3><p>在某些情况下，我们可能需要列举 DAG 中从一个顶点到另一个顶点的所有路径。这可以通过回溯法结合深度优先搜索（DFS）来实现。</p>
+<h3 id="传递闭包（Transitive-Closure）"><a href="#传递闭包（Transitive-Closure）" class="headerlink" title="传递闭包（Transitive Closure）"></a>传递闭包（Transitive Closure）</h3><p>传递闭包是图的一个属性，表示图中顶点之间的可达性。在 DAG 中计算传递闭包可以使用 Floyd-Warshall 算法或者通过深度优先搜索（DFS）的变体来完成。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a target="_blank" rel="noopener" href="https://www.baeldung.com/cs/dag-applications">Practical Applications of Directed Acyclic Graphs</a><br><a target="_blank" rel="noopener" href="https://www.geeksforgeeks.org/introduction-to-directed-acyclic-graph/">Introduction to Directed Acyclic Graph</a><br><a target="_blank" rel="noopener" href="https://juejin.cn/post/7026334366594760718">「LeetCode」拓扑排序系列（一）</a><br><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MjM5ODIzNDQ3Mw==&chksm=beca3e7b89bdb76d0e6f59692bc5508e810453d0f3f17e0af0ab22abf1622c3b416dd007f77b&idx=1&mid=2649968253&scene=27&sn=cc6da95e631a20400b248c0f276b3eec&utm_campaign=geek_search&utm_content=geek_search&utm_medium=geek_search&utm_source=geek_search&utm_term=geek_search#wechat_redirect">十分钟讲清楚IOTA和DAG</a><br><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzU2ODQzNzAyNQ==&chksm=fc8cb56dcbfb3c7bb21087251922e6ed478c32e87bf0a8ac601d71ed672a87890a60dc207c64&idx=1&mid=2247484707&scene=27&sn=d2fcca1d92fcd2fd7b8adbe30e41ecc9&utm_campaign=geek_search&utm_content=geek_search&utm_medium=geek_search&utm_source=geek_search&utm_term=geek_search#wechat_redirect">用可替代区块链的DAG实现智能合约</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/02/17/%E3%80%90%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91%E9%98%85%E8%AF%BB%E3%80%91Apache-Flink-Stream-and-Batch-Processing-in-a-Single-Engine-Apache-Flink/" rel="prev" title="【论文翻译阅读】Apache Flink: Stream and Batch Processing in a Single Engine Apache Flink">
+                  <i class="fa fa-angle-left"></i> 【论文翻译阅读】Apache Flink: Stream and Batch Processing in a Single Engine Apache Flink
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
