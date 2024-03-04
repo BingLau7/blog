@@ -9,7 +9,7 @@ tags:
 - 介绍 DAG 是什么
 - 介绍 DAG 能解决什么问题，有哪些出名的系统是依赖 DAG 的
 - 介绍 DAG 的实现
-- 介绍 Leetcode 中涉及的 DAG 算法题目
+- 介绍 DAG 算法场景
 
 <!-- more -->
 
