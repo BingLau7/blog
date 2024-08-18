@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本篇文章主要目的是在工作和学习过中对于 Flink Source 的一些使用和学习的理解记录。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink-Source Connector 的一些概念理解">
+<meta property="og:url" content="http://example.com/2024/08/18/Flink-Source-Connector-%E7%9A%84%E4%B8%80%E4%BA%9B%E6%A6%82%E5%BF%B5%E7%90%86%E8%A7%A3/index.html">
+<meta property="og:site_name" content="村里最好的博客">
+<meta property="og:description" content="本篇文章主要目的是在工作和学习过中对于 Flink Source 的一些使用和学习的理解记录。">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/images/flink/flink-source-1.svg">
+<meta property="article:published_time" content="2024-08-18T09:29:27.000Z">
+<meta property="article:modified_time" content="2024-08-18T09:42:52.049Z">
+<meta property="article:author" content="刘冰鉴">
+<meta property="article:tag" content="Flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/flink/flink-source-1.svg">
+
+
+<link rel="canonical" href="http://example.com/2024/08/18/Flink-Source-Connector-%E7%9A%84%E4%B8%80%E4%BA%9B%E6%A6%82%E5%BF%B5%E7%90%86%E8%A7%A3/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://example.com/2024/08/18/Flink-Source-Connector-%E7%9A%84%E4%B8%80%E4%BA%9B%E6%A6%82%E5%BF%B5%E7%90%86%E8%A7%A3/","path":"2024/08/18/Flink-Source-Connector-的一些概念理解/","title":"Flink-Source Connector 的一些概念理解"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Flink-Source Connector 的一些概念理解 | 村里最好的博客</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">村里最好的博客</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E7%9A%84%E6%A6%82%E5%BF%B5%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">主要的概念介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E7%B3%BB%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.1.</span> <span class="nav-text">关系介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API"><span class="nav-number">1.2.</span> <span class="nav-text">API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API-%E4%B8%AD%E7%9A%84%E6%B3%9B%E5%9E%8B"><span class="nav-number">1.3.</span> <span class="nav-text">API 中的泛型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SourceReaderBase-%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.</span> <span class="nav-text">SourceReaderBase 实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%99%E4%B9%88%E8%AE%BE%E8%AE%A1%E7%9A%84%E4%B8%80%E4%BA%9B%E8%87%AA%E5%B7%B1%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-number">2.</span> <span class="nav-text">为什么要这么设计的一些自己的理解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%8C%BA%E5%88%86-Split-%E5%92%8C-Reader%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">为什么要区分 Split 和 Reader？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SplitStatus-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">SplitStatus 是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink-Source-Connector-%E7%9A%84-Base-%E6%98%AF%E6%9C%9F%E6%9C%9B%E5%BC%95%E5%AF%BC%E6%88%91%E4%BB%AC%E5%90%91%E5%93%AA%E4%B8%AA%E6%96%B9%E5%90%91%E5%AE%9E%E7%8E%B0-Source%EF%BC%9F"><span class="nav-number">2.3.</span> <span class="nav-text">Flink-Source Connector 的 Base 是期望引导我们向哪个方向实现 Source？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Checkpoint-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.4.</span> <span class="nav-text">Checkpoint 是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Watermark-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.5.</span> <span class="nav-text">Watermark 是什么？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD"><span class="nav-number">3.</span> <span class="nav-text">后续</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘冰鉴</p>
+  <div class="site-description" itemprop="description">Res severa est verum gaudium.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">59</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/18/Flink-Source-Connector-%E7%9A%84%E4%B8%80%E4%BA%9B%E6%A6%82%E5%BF%B5%E7%90%86%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Flink-Source Connector 的一些概念理解 | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Flink-Source Connector 的一些概念理解
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2024-08-18 17:29:27 / Modified: 17:42:52" itemprop="dateCreated datePublished" datetime="2024-08-18T17:29:27+08:00">2024-08-18</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本篇文章主要目的是在工作和学习过中对于 Flink Source 的一些使用和学习的理解记录。</p>
+<span id="more"></span>
+
+<h2 id="主要的概念介绍"><a href="#主要的概念介绍" class="headerlink" title="主要的概念介绍"></a>主要的概念介绍</h2><h3 id="关系介绍"><a href="#关系介绍" class="headerlink" title="关系介绍"></a>关系介绍</h3><p><img src="/images/flink/flink-source-1.svg"></p>
+<h3 id="API"><a href="#API" class="headerlink" title="API"></a>API</h3><table>
+<thead>
+<tr>
+<th>类名</th>
+<th>用途</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Source&lt;T, Split, EnumChk&gt;</code></td>
+<td>Flink 的 Source 工具类 <br> 1. 负载创建 SplitEnumerator 与 SourceReader 这两个 Source 关键类; <br>  2. 提供了创建 Split 与 EnumChk 的序列化和反序列化器的接口; <br>  3. 提供是不是有界的标识</td>
+<td>KafkaSource 的实现<br>  1. 创建 KafkaSourceEnumerator 与 KafkaSourceReader <br>  2. 提供 KafkaPartitionSplitSerializer 与 KafkaSourceEnumStateSerializer <br> 3. 在创建 KafkaSource 确定是否是有界的(配置项)</td>
+</tr>
+<tr>
+<td><code>SplitEnumerator&lt;Split, EnumChk&gt;</code></td>
+<td>Flink 为 Source 区分了切片（Split）和根据切片读取数据的两个主要组件。SplitEnumerator 就是生产切片的生产者。<br>  1. 负责生产切片，以及分配切片到 Reader 中 <br> 2. 可以理解成分布式系统中的控制节点，在 Flink 中的 JobManager 中运行或者在单个 TaskManager 中运行，不会在多台机器中同时运行。</td>
+<td>KafkaSource 的实现 KafkaSourceEnumerator <br>  负责动态地发现和分配 Kafka 分区（TopicPartitions）给 Source 任务（Reader）。</td>
+</tr>
+<tr>
+<td><code>SourceReader&lt;T, SplitT&gt;</code></td>
+<td>Flink 用于读取切片，生产数据的组件 <br> 1. 负载接受 Split 然后生产出 T(消息泛型) <br>  2. 可以在多个 TaskManager 中运行</td>
+<td>KafkaSourceReader 基于 Base 实现，读取 partition 的数据</td>
+</tr>
+<tr>
+<td><code>SimpleVersionedSerializer</code></td>
+<td>Flink 中对于 Split 与 EnumChk 需要提供序列化和反序列化的能力 <br>  - Split 的序列化主要是用于 SplitEnumerator 与 SourceReader。同时用于 SourceReader 的 Snapshot 序列化 <br> - EnumChk 用于 Checkpoint 的持久化</td>
+<td>Kafka 的 KafkaPartitionSplitSerializer 与 KafkaSourceEnumStateSerializer</td>
+</tr>
+</tbody></table>
+<h3 id="API-中的泛型"><a href="#API-中的泛型" class="headerlink" title="API 中的泛型"></a>API 中的泛型</h3><table>
+<thead>
+<tr>
+<th>泛型名称</th>
+<th>泛型用途</th>
+<th>使用方</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T</td>
+<td>表示 Source 生成的消息</td>
+<td>SourceReader</td>
+<td>Kafka 的是外围传递的泛型</td>
+</tr>
+<tr>
+<td>SplitT</td>
+<td>表示 SplitEnumerator 生成的切片类型</td>
+<td>SplitEnumerator 与 SourceReader</td>
+<td>Kafka 是 KafkaPartitionSplit，(topicPartition, startOffset, endOffset)</td>
+</tr>
+<tr>
+<td>EnumChk</td>
+<td>表示 Checkpoint 类型</td>
+<td>SplitEnumerator</td>
+<td>Kafka 是 KafkaSourceEnumState <code>Set&lt;TopicPartition&gt; assignedPartitions</code></td>
+</tr>
+</tbody></table>
+<h3 id="SourceReaderBase-实现"><a href="#SourceReaderBase-实现" class="headerlink" title="SourceReaderBase 实现"></a>SourceReaderBase 实现</h3><table>
+<thead>
+<tr>
+<th>类名</th>
+<th>用途</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SourceReaderBase&lt;E, T, SplitT, SplitStatus&gt;</code></td>
+<td>因为 SourceReader 的高灵活性，简化了 SourceReader 的实现，定义了如何读取外部数据源（通过 SplitReader），同时通过构造方法确定了工作线程模型（<code>SplitFetcherManager</code>）。</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SingleThreadMultiplexSourceReaderBase&lt;E, T, SplitT, SplitStatus&gt;</code></td>
+<td>SingleThreadMultiplexSourceReaderBase 是根据 SourceReaderBase 实现的一个特定线程模型，专为实现<strong>单线程多路复用的数据读取场景设计</strong>。它允许在一个单独的线程中同时管理多个数据源或数据分片（splits）的读取，这对于那些每个数据源或分片的读取并不需要独立线程，或者资源有限希望减少线程开销的场景非常有用。</td>
+<td>KafkaSourceReader</td>
+</tr>
+<tr>
+<td><code>RecordEmitter&lt;E, T, SplitStatus&gt;</code></td>
+<td>通常用于将从数据源读取到的数据转换为Flink的内部数据结构（泛型 E），它是数据读取逻辑的一部分，帮助<strong>将原始数据格式转换为Flink可以处理的形式</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>SplitFetcherManager&lt;E, SplitT&gt;</code></td>
+<td>负责管理所有的 SplitFetcher 实例。在 Flink 中，数据源可能会被切分成多个 Split，以支持并行读取。SplitFetcherManager 确保每个 Split 都有相应的 SplitFetcher 负责从该分片读取数据，并且管理这些 fetcher 的生命周期。</td>
+<td>SingleThreadFetcherManager</td>
+</tr>
+<tr>
+<td><code>FutureCompletingBlockingQueue&lt;RecordsWithSplits&gt;</code></td>
+<td>可以理解为一个异步阻塞队列，之所以单独拿出来，是它承担了</td>
+<td></td>
+</tr>
+<tr>
+<td>SplitReader 读出来数据，将其传递到 SourceReaderBase 的职责</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>SplitContext</code></td>
+<td>针对每个 Split 生成一个 SplitContext，是 SourceReaderBase 的一个 private inner class.</td>
+<td></td>
+</tr>
+<tr>
+<td>用于生成 SourceOutput</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>SourceOutput</code></td>
+<td>与 Flink 框架层交互的入口</td>
+<td>SourceOutputWithWatermarks</td>
+</tr>
+<tr>
+<td>根据 WatermarkGenerator 来通过 Record 生成 Watermark，然后将数据发送给下游</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>WatermarkOutput&lt;T&gt;</code></td>
+<td>在 SourceOutput 发送 Record 过程中，通过 Record 生成 Watermark 并发送到框架中</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SplitFetcher&lt;E, Split&gt;</code></td>
+<td>负责从特定的split中获取数据，并将数据放入到 FutureCompletingBlockingQueue 中。它是数据读取逻辑的核心部分，实现了如何与外部数据源交互的具体逻辑</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SplitFetcherTask&lt;E, Split&gt;</code></td>
+<td><code>SplitFetcherManager</code> 管理的实体接口，定义了 <code>run</code> 与 <code>wakeup</code>两个方法</td>
+<td></td>
+</tr>
+<tr>
+<td><code>FetchTask&lt;E, Split&gt;</code></td>
+<td>实现 SplitFetcherTask，驱动 SplitReader 的 fetch 方法</td>
+<td></td>
+</tr>
+<tr>
+<td><code>DummySplitFetcherTask&lt;E, Split&gt;</code></td>
+<td><code>SplitFetcher</code>中的一个标记类，判断此时是不是处于 <code>wakeup</code>状态</td>
+<td></td>
+</tr>
+<tr>
+<td><code>AddSplitsTask&lt;E, Split&gt;</code></td>
+<td>实现 SplitFetcherTask，驱动 SplitReader 的 handleSplitChanges 方法</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SplitReader&lt;E, Split&gt;</code></td>
+<td>读取数据和处理切片逻辑</td>
+<td>KafkaPartitionSplitReader 根据 partition 读取 (startOffset, endOffset) 之间的数据</td>
+</tr>
+<tr>
+<td><code>RecordsWithSplits&lt;E&gt;</code></td>
+<td>提供了一个类 Iterator 来读取 Record 的接口，不同的是，需要同时提供 Split 的生命周期管理能力，需要在读取完成一批消息之后能获知下一个 Split 是什么以方便初始化 SplitStatus，在读取完所有的 Split 之后需要能知道哪些 Split 已经完成了。</td>
+<td>KafkaPartitionSplitRecords</td>
+</tr>
+</tbody></table>
+<h2 id="为什么要这么设计的一些自己的理解"><a href="#为什么要这么设计的一些自己的理解" class="headerlink" title="为什么要这么设计的一些自己的理解"></a>为什么要这么设计的一些自己的理解</h2><h3 id="为什么要区分-Split-和-Reader？"><a href="#为什么要区分-Split-和-Reader？" class="headerlink" title="为什么要区分 Split 和 Reader？"></a>为什么要区分 Split 和 Reader？</h3><p>将数据源读取的逻辑解耦成两部分：</p>
+<ol>
+<li>SplitEnumerator 负责划分数据源读取逻辑，并承担分布式系统中的中心分配任务角色，将数据源需要的顺序性在这里实现。</li>
+<li>SourceReader 仅专注于负责读数据，具备可扩展性，可以通过增加 Task Slot 实现水平扩展。并且容灾也依赖于 SourceReader，当一个 SourceReader 任务节点故障之后，SplitEnumerator 可以通过向其他健康的 SourceReader 发送 Split 即可恢复整体系统的数据读取。</li>
+</ol>
+<h3 id="SplitStatus-是什么？"><a href="#SplitStatus-是什么？" class="headerlink" title="SplitStatus 是什么？"></a>SplitStatus 是什么？</h3><p>SplitStatus 可以理解是细化的 Split，<code>SourceReaderBase</code>中通过 <code>initializedState</code>&#x2F;<code>toSplitType</code>两个方法来达到 Split 与 SplitStatus 之间的相互转换，然后通过 <code>snapshotState</code>方法将 SplitStatus 转换成根据 CheckpointId 存储的 snapshot。<br>SplitStatus 通常是依赖 <code>RecordEmitter</code>进行推进，比如 Kafka 中 <code>KafkaRecordEmitter</code>接收到一个 Record 就将 <code>KafkaPartitionSplitState</code>的 currentOffset 推进一位，这样确保退出或容灾情况下的 snapshot 是最近读到的 offset 开始。</p>
+<h3 id="Flink-Source-Connector-的-Base-是期望引导我们向哪个方向实现-Source？"><a href="#Flink-Source-Connector-的-Base-是期望引导我们向哪个方向实现-Source？" class="headerlink" title="Flink-Source Connector 的 Base 是期望引导我们向哪个方向实现 Source？"></a>Flink-Source Connector 的 Base 是期望引导我们向哪个方向实现 Source？</h3><ol>
+<li>职责分离，将有顺序要求的部分放入 SplitEnumerator 来实现，SourceReader 专注实现读取数据的能力。</li>
+<li>状态管理分离，期望 SplitEnumerator 与 SourceReader 分别管理自身的状态，SplitEnumerator 负责产生 EnumChk 用于自身的断点及容灾，而对于已经发送的 Split 期望是 SourceReader 自身进行管理，分布式的方式，不需要统一汇集到某处管理整个任务的状态。</li>
+<li>线程模型的多样化，SourceReaderBase 默认提供了单线程读 Split 的 SingleThreadMultiplexSourceReaderBase，这种在 SourceReader 读消息比较耗时的情况下实际使用资源会较少，但同时也允许直接继承 SourceReaderBase 实现，然后自己实现 SplitFetcherManager 来实现 SourceReader 的线程管理模型。</li>
+</ol>
+<h3 id="Checkpoint-是什么？"><a href="#Checkpoint-是什么？" class="headerlink" title="Checkpoint 是什么？"></a>Checkpoint 是什么？</h3><p>Checkpoint 是 Flink 用于容灾的状态数据，通过 Checkpoint Flink 可以对作业的状态和计算位置进行恢复。</p>
+<ol>
+<li><strong>开启：</strong>可以通过 <code>StreamExecutionEnvironment#enableCheckpointing(timeInterval)</code>来开启 Checkpoint。周期性（timeInterval）触发。</li>
+<li><strong>发送：</strong>Checkpoint 是由框架的 JobManager 发起，会向参与任务的 TaskManager 发出一个 checkpoint 开始的 barrier（一种特殊的消息）。这个 barrier 会随着数据流一起流动，并且会确保在 barrier 之前的所有数据都已经被处理完成。</li>
+<li><strong>状态快照：</strong>每个 TaskManager 收到 barrier 后，会对其管理的任务状态进行快照。这包括了算子的状态、时间窗口信息等。状态快照是异步进行的，以减少对数据处理的影响。</li>
+<li><strong>持久化：</strong>状态快照完成后，这些快照会被持久化存储到外部存储系统中（如 HDFS、S3 等），以保证即使整个集群失败也能恢复数据。</li>
+<li><strong>完成确认：</strong>一旦所有任务的状态快照都成功持久化，JobManager 会收到确认并标记此检查点为已完成。此时，之前的旧检查点可以被清理以节省存储空间。</li>
+</ol>
+<p>对于 Source 端来说，Checkpoint 主要影响其以下方面：</p>
+<ol>
+<li><strong>记录读取位置：</strong>Source 端在接收到 barrier 时，会记录当前的数据读取位置（例如，在 Kafka 中就是当前消费到的 offset）。这个位置信息会作为 checkpoint 的一部分被持久化，这样在恢复时可以从这个位置重新开始读取数据，避免数据重复处理或丢失。<code>SplitEnumerator#snapshotState</code>与<code>SourceReader#snapshot</code>方法</li>
+<li><strong>暂停数据读取：</strong>为了确保一致性，在 barrier 通过时，Source 可能需要暂时停止从源头读取新数据，直到当前的 checkpoint 完成。这样做是为了保证 barrier 和其之前的数据包能够作为一个整体被处理和快照。</li>
+<li><strong>恢复逻辑：</strong>当 Flink 应用因故障重启后，它会从最近成功的 checkpoint 恢复执行。这时候，Source 会根据之前记录的读取位置信息重新初始化自己，<strong>从正确的偏移量开始读取数据，从而保证数据处理的精确一次语义</strong>。</li>
+</ol>
+<h3 id="Watermark-是什么？"><a href="#Watermark-是什么？" class="headerlink" title="Watermark 是什么？"></a>Watermark 是什么？</h3><p>Watermark 在数据结构上是一个 <code>long timestamp</code>的数据封装的 final class。代表数据流中的进度标记，表示到目前为止所有小于或等于该时间戳的事件都已到达系统。简单来说，Watermark 是一种逻辑时钟，帮助Flink理解数据流中时间的进展，从而在处理乱序事件时能够做出基于时间的决策，尤其是处理时间窗口聚合时。<br>Watermark 的生成是通过 <code>WatermarkGenerator</code>来配置确定的，使用 Flink API 时需要设置一个同时包含 <code>TimestampAssigner</code> 和 <code>WatermarkGenerator</code> 的 <code>WatermarkStrategy</code>。<code>WatermarkStrategy</code> 工具类中也提供了许多常用的 watermark 策略，并且用户也可以在某些必要场景下构建自己的 watermark 策略。<br>从 Source 接口的角度来看，当 Record 通过 <code>RecordEmitter#emitRecord</code>发送到框架的时候，<code>SourceOutput</code>会透出 <code>void collect(T record, long timestamp);</code>接口，而这个 timestamp 会根据 <code>TimestampAssigner</code>与 <code>WatermarkGenerator</code>来生成 <code>Watermark</code>。</p>
+<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><ul>
+<li>介绍 SourceReaderBase 拉取数据的流程以及其中的线程模型</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://cwiki.apache.org/confluence/display/FLINK/FLIP-27%3A+Refactor+Source+Interface">FLIP-27: Refactor Source Interface</a></li>
+<li><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-release-1.20/zh/">Apache Flink 文档</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Flink/" rel="tag"># Flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/03/04/DAG-%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/" rel="prev" title="DAG 简单介绍">
+                  <i class="fa fa-angle-left"></i> DAG 简单介绍
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">刘冰鉴</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

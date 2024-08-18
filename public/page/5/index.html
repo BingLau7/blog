@@ -121,7 +121,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-count">59</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -132,7 +132,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-count">31</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -149,6 +149,102 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2017/04/30/select%EF%BC%8C-poll%EF%BC%8C-epoll%EF%BC%8C-%E4%BF%A1%E5%8F%B7%E9%A9%B1%E5%8A%A8-IO%E7%BB%86%E8%AE%B2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘冰鉴">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="村里最好的博客">
+      <meta itemprop="description" content="Res severa est verum gaudium.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 村里最好的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2017/04/30/select%EF%BC%8C-poll%EF%BC%8C-epoll%EF%BC%8C-%E4%BF%A1%E5%8F%B7%E9%A9%B1%E5%8A%A8-IO%E7%BB%86%E8%AE%B2/" class="post-title-link" itemprop="url">select， poll， epoll， 信号驱动 IO细讲</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-04-30 16:51:10" itemprop="dateCreated datePublished" datetime="2017-04-30T16:51:10+08:00">2017-04-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%9F%BA%E7%A1%80%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">基础原理</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>63章 其他备选的 IO 模型</p>
+</blockquote>
+<h3 id="整体概览"><a href="#整体概览" class="headerlink" title="整体概览"></a>整体概览</h3><p>实际上 I&#x2F;O 多路复用，信号驱动 I&#x2F;O 以及 epool 都是用来实现同一个目标的技术——同时检查多个文件描述符，看它们是否准备好了执行 I&#x2F;O 操作（准确地说，是看 I&#x2F;O 系统调用是否可以非阻塞地执行）。文件描述符就绪状态的转化是通过一些 I&#x2F;O 事件来触发的，比如输入数据到达，套接字连接建立完成，或者是之前满载的套接字发送缓冲区在 TCP 将队列中的数据传送到对端之后由了剩余空间。同时检查多个文件描述符在类似网络服务器的应用中很有用处，或者是那么必须同事检查终端以及管道或套接字输入的应用程序。</p>
+<p>需要注意的是这些技术都不会执行实际的 I&#x2F;O 操作。它们只是告诉我们某个文件描述符已经处于就绪状态了，这时需要调用其他的系统调用来完成实际的 I&#x2F;O 操作。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/04/30/select%EF%BC%8C-poll%EF%BC%8C-epoll%EF%BC%8C-%E4%BF%A1%E5%8F%B7%E9%A9%B1%E5%8A%A8-IO%E7%BB%86%E8%AE%B2/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -1098,98 +1194,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2016/03/24/%E5%88%9D%E5%AD%A6Kafka%E2%80%94%E2%80%94Kafka%E9%85%8D%E7%BD%AE/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2016/03/22/%E5%88%9D%E5%AD%A6Kafka%E2%80%94%E2%80%94Kafka%E5%AE%9E%E4%BE%8B%E5%8F%8A%E5%85%B6%E8%AE%B2%E8%A7%A3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="刘冰鉴">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="村里最好的博客">
-      <meta itemprop="description" content="Res severa est verum gaudium.">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 村里最好的博客">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2016/03/22/%E5%88%9D%E5%AD%A6Kafka%E2%80%94%E2%80%94Kafka%E5%AE%9E%E4%BE%8B%E5%8F%8A%E5%85%B6%E8%AE%B2%E8%A7%A3/" class="post-title-link" itemprop="url">初学Kafka——Kafka实例及其讲解</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2016-03-22 16:21:45" itemprop="dateCreated datePublished" datetime="2016-03-22T16:21:45+08:00">2016-03-22</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-12-23 12:03:46" itemprop="dateModified" datetime="2023-12-23T12:03:46+08:00">2023-12-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">工具</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><p><strong>Topic：</strong>Kafka将消息种子(Feed)分门别类， 每一类的消息称之为话题(Topic).<br><strong>Producer：</strong>发布消息的对象称之为话题生产者(Kafka topic producer)<br><strong>Consumer：</strong>订阅消息并处理发布的消息的种子的对象称之为话题消费者(consumers)<br><strong>Broker：</strong>已发布的消息保存在一组服务器中，称之为Kafka集群。集群中的每一个服务器都是一个代理(Broker). 消费者可以订阅一个或多个话题，并从Broker拉数据，从而消费这些已发布的消息。<br><strong>Partition：</strong>每个Topic下会有一个或多个Partition，创建Topic时可指定Parition数量。每个Partition对应于一个文件夹，该文件夹下存储该{Partition的数据和索引文件。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/03/22/%E5%88%9D%E5%AD%A6Kafka%E2%80%94%E2%80%94Kafka%E5%AE%9E%E4%BE%8B%E5%8F%8A%E5%85%B6%E8%AE%B2%E8%A7%A3/#more" rel="contents">
                 Read more &raquo;
               </a>
             </div>
