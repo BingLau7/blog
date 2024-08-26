@@ -1,5 +1,5 @@
 ---
-title: Flink-Source Connector 的一些概念理解
+title: Flink-Source-1 Connector 的一些概念理解
 date: 2024-08-18 17:29:27
 tags: 
     - Flink
@@ -37,12 +37,9 @@ tags:
 | `SingleThreadMultiplexSourceReaderBase<E, T, SplitT, SplitStatus>` | SingleThreadMultiplexSourceReaderBase 是根据 SourceReaderBase 实现的一个特定线程模型，专为实现**单线程多路复用的数据读取场景设计**。它允许在一个单独的线程中同时管理多个数据源或数据分片（splits）的读取，这对于那些每个数据源或分片的读取并不需要独立线程，或者资源有限希望减少线程开销的场景非常有用。 | KafkaSourceReader |
 | `RecordEmitter<E, T, SplitStatus>` | 通常用于将从数据源读取到的数据转换为Flink的内部数据结构（泛型 E），它是数据读取逻辑的一部分，帮助**将原始数据格式转换为Flink可以处理的形式** |  |
 | `SplitFetcherManager<E, SplitT>` | 负责管理所有的 SplitFetcher 实例。在 Flink 中，数据源可能会被切分成多个 Split，以支持并行读取。SplitFetcherManager 确保每个 Split 都有相应的 SplitFetcher 负责从该分片读取数据，并且管理这些 fetcher 的生命周期。 | SingleThreadFetcherManager |
-| `FutureCompletingBlockingQueue<RecordsWithSplits>` | 可以理解为一个异步阻塞队列，之所以单独拿出来，是它承担了
-SplitReader 读出来数据，将其传递到 SourceReaderBase 的职责 |  |
-| `SplitContext` | 针对每个 Split 生成一个 SplitContext，是 SourceReaderBase 的一个 private inner class.
-用于生成 SourceOutput |  |
-| `SourceOutput` | 与 Flink 框架层交互的入口 | SourceOutputWithWatermarks
-根据 WatermarkGenerator 来通过 Record 生成 Watermark，然后将数据发送给下游 |
+| `FutureCompletingBlockingQueue<RecordsWithSplits>` | 可以理解为一个异步阻塞队列，之所以单独拿出来，是它承担了SplitReader 读出来数据，将其传递到 SourceReaderBase 的职责 |  |
+| `SplitContext` | 针对每个 Split 生成一个 SplitContext，是 SourceReaderBase 的一个 private inner class. 用于生成 SourceOutput |  |
+| `SourceOutput` | 与 Flink 框架层交互的入口 | SourceOutputWithWatermarks 根据 WatermarkGenerator 来通过 Record 生成 Watermark，然后将数据发送给下游 |
 | `WatermarkOutput<T>` | 在 SourceOutput 发送 Record 过程中，通过 Record 生成 Watermark 并发送到框架中 |  |
 | `SplitFetcher<E, Split>` | 负责从特定的split中获取数据，并将数据放入到 FutureCompletingBlockingQueue 中。它是数据读取逻辑的核心部分，实现了如何与外部数据源交互的具体逻辑 |  |
 | `SplitFetcherTask<E, Split>` | `SplitFetcherManager` 管理的实体接口，定义了 `run` 与 `wakeup`两个方法 |  |
