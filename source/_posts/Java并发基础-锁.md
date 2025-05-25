@@ -6,10 +6,14 @@ tags:
 ---
 
 ## 锁
+介绍下面锁的实现逻辑
+
 + synchronized
 + ReentranLock
 + ReentranReadWriteLock
 + StampedLock
+
+<!-- more -->
 
 ### AQS(`AbstractQueuedSynchronizer`)
 锁（ReentranLock）的基础类实现，也是很多并发工具类的基础类依赖（比如 Semaphore, CountDownLatch）。
@@ -19,43 +23,43 @@ tags:
 #### 关键方法
 1. **状态管理方法**
 
-`**tryAcquire(int arg)**`**：**独占式尝试获取同步状态。需要子类实现，若成功返回 `true`，否则返回 `false`。
+**`tryAcquire(int arg)`**：独占式尝试获取同步状态。需要子类实现，若成功返回 `true`，否则返回 `false`。
 
-`**tryRelease(int arg)**`**：**独占式释放同步状态。子类实现。成功返回 `true`否则 `false`
+**`**tryRelease(int arg)`**：**独占式释放同步状态。子类实现。成功返回 `true`否则 `false`
 
-`**tryAcquireShared(int args)**`**：**共享式尝试获取同步状态。子类实现，返回值表示剩余可用资源，负数失败，0/正数成功。
+**`**tryAcquireShared(int args)`**：**共享式尝试获取同步状态。子类实现，返回值表示剩余可用资源，负数失败，0/正数成功。
 
-`**tryReleaseShared(int args)**`**：**共享式释放状态。子类实现。
+**`**tryReleaseShared(int args)`**：**共享式释放状态。子类实现。
 
 2. **模板方法**
 
-`**acquire(int arg)**`**：**独占式获取同步状态。调用 `tryAcquire`尝试获取，失败则将线程加入等待队列并**自旋**，直到前驱节点为头节点且成功获取资源。
+**`acquire(int arg)`**：独占式获取同步状态。调用 `tryAcquire`尝试获取，失败则将线程加入等待队列并**自旋**，直到前驱节点为头节点且成功获取资源。
 
-`**release(int arg)**`**：**独占式释放同步状态。调用 `tryRelease`释放后，唤醒后继节点的线程。
+**`release(int arg)`**：独占式释放同步状态。调用 `tryRelease`释放后，唤醒后继节点的线程。
 
-`**acquireShared(int arg)**`**：**共享式获取同步状态。调用 `tryAcquiredShared`成功后，传播唤醒后续节点。
+**`acquireShared(int arg)`**：共享式获取同步状态。调用 `tryAcquiredShared`成功后，传播唤醒后续节点。
 
-`**releaseShared(int arg)**`**：**共享式释放同步状态。调用 `tryReleaseShared`后，唤醒后续等待的线程。
+**`releaseShared(int arg)`**：共享式释放同步状态。调用 `tryReleaseShared`后，唤醒后续等待的线程。
 
 3. **条件队列管理**
 
-`**newCondition()**`**：**创建与 AQS 实例绑定的 `Condition`对象，用于实现线程等待/通知机制（如 `await()`和 `signal()`）
+**`newCondition()`**：创建与 AQS 实例绑定的 `Condition`对象，用于实现线程等待/通知机制（如 `await()`和 `signal()`）
 
 4. **辅助方法**
 
-`**isHeldExclusively()**`**：**判断当前同步状态是否被独占（如 ReentranLock 中检测锁持有线程是否为当前线程）
+**`isHeldExclusively()`**：判断当前同步状态是否被独占（如 ReentranLock 中检测锁持有线程是否为当前线程）
 
-`**acquireInterruptibly(int arg)**`**：**可中断的获取同步状态。在自旋过程中若检测到线程中断，直接抛出异常并退出。
+**`acquireInterruptibly(int arg)`**：可中断的获取同步状态。在自旋过程中若检测到线程中断，直接抛出异常并退出。
 
 #### 核心设计原理
-+ **同步状态管理 **：通过 `**>volatile int state**` 变量表示状态，依赖 CAS 操作保证原子性（如 `**>compareAndSetState**`）<font style="background-color:rgb(224, 223, 255);">
-+ **队列同步 **：维护一个双向 FIFO 队列（CLH 队列变体），将未获取资源的线程封装为节点（Node）并阻塞，前驱节点释放后唤醒后继节点 <font style="background-color:rgb(224, 223, 255);">
-+ **子类扩展 **：子类通过实现 `**>tryAcquire**`/`**>tryRelease**` 等方法定义同步逻辑，AQS 负责底层线程阻塞、唤醒及队列管理
++ **同步状态管理 **：通过 **`volatile int state`** 变量表示状态，依赖 CAS 操作保证原子性（如 `**>compareAndSetState**`）
++ **队列同步 **：维护一个双向 FIFO 队列（CLH 队列变体），将未获取资源的线程封装为节点（Node）并阻塞，前驱节点释放后唤醒后继节点 
++ **子类扩展 **：子类通过实现 **`tryAcquire/tryRelease`** 等方法定义同步逻辑，AQS 负责底层线程阻塞、唤醒及队列管理
 
 #### 典型使用场景
-+ **独占锁 **：如 `**>ReentrantLock**`，通过 `**>tryAcquire**` 和 `**>tryRelease**` 实现可重入锁逻辑。
-+ **共享锁 **：如 `**>Semaphore**` 和 `**>CountDownLatch**`，通过 `**>tryAcquireShared**` 和 `**>tryReleaseShared**` 控制资源访问。
-+ **条件变量 **：结合 `**>Condition**` 实现线程间的精确等待与通知
++ **独占锁 **：如 **`ReentrantLock`**，通过 **`tryAcquire`** 和 **`tryRelease`** 实现可重入锁逻辑。
++ **共享锁 **：如 **`Semaphore`** 和 **`CountDownLatch`**，通过 **`tryAcquireShared`** 和 **`tryReleaseShared`** 控制资源访问。
++ **条件变量 **：结合 **`Condition`** 实现线程间的精确等待与通知
 
 #### 学习收获
 1. AQS 明显使用了**模板方法**的模式，在确定使用用途的时候，通过固定的代码框架可以避免代码的重复性。但是需要对后续实现功能有比较确切的了解才能使用，否则后续容易导致子类变更影响的扩散。
@@ -80,8 +84,8 @@ tags:
 >
 > 线程通过自旋检查前驱节点状态来决定是否获取锁。其核心原理是：
 >
-> 1. **队列结构 **：线程竞争锁时，会以 FIFO（先进先出）顺序加入链表队列，每个节点仅需关注前驱节点 <font style="background-color:rgb(224, 223, 255);">
-> 2. **自旋机制 **：线程在未获取锁时持续自旋检查前驱节点的状态，当前驱节点释放锁后，当前线程才能尝试获取锁 <font style="background-color:rgb(224, 223, 255);">
+> 1. **队列结构 **：线程竞争锁时，会以 FIFO（先进先出）顺序加入链表队列，每个节点仅需关注前驱节点 
+> 2. **自旋机制 **：线程在未获取锁时持续自旋检查前驱节点的状态，当前驱节点释放锁后，当前线程才能尝试获取锁 
 > 3. **公平性 **：保证线程按申请顺序获取锁，避免饥饿问题
 > 4. **无锁化操作 **：通过 CAS 原子操作维护队列，减少锁竞争
 >
@@ -330,7 +334,7 @@ public class com/oceanbase/oms/SynchronizedDemo {
 
 其中 MONITORENTER / MONITOREXIT 构成了互斥对
 
-![image-1](/image/java/concurrency-lock-1.png)
+![image-1](/images/java/concurrency-lock-1.png)
 
 #### Monitor 对象的介绍
 JVM 中的 **Monitor 对象** 是 Java 实现线程同步的核心机制之一，它与对象（或类）紧密关联，用于管理线程对共享资源的互斥访问和协作通信。以下是其核心要点：
@@ -370,10 +374,10 @@ JVM 中的 **Monitor 对象** 是 Java 实现线程同步的核心机制之一�
 + **线程协作**：通过 `wait()` 和 `notify()` 在 Monitor 的 `_WaitSet` 和 `_EntryList` 之间转移线程，实现生产者-消费者等模式 。
 
 ### ReentrantLock 的实现
-1. **可重入性 **：同一个线程可以多次获取同一把锁，避免死锁。例如，一个线程在持有锁的情况下再次进入同步代码块时无需重新竞争锁 <font style="background-color:rgb(224, 223, 255);">。
+1. **可重入性 **：同一个线程可以多次获取同一把锁，避免死锁。例如，一个线程在持有锁的情况下再次进入同步代码块时无需重新竞争锁 。
 2. **支持公平与非公平模式 **：
     - **公平模式 **：线程按照请求锁的顺序获取锁，避免“插队”现象，但可能降低吞吐量。
-    - **非公平模式 **：允许线程“插队”获取锁（如刚释放锁的线程可能立即重新获取），提高性能但可能导致某些线程饥饿 <font style="background-color:rgb(224, 223, 255);">。
+    - **非公平模式 **：允许线程“插队”获取锁（如刚释放锁的线程可能立即重新获取），提高性能但可能导致某些线程饥饿 。
 3. **灵活的锁控制 **：提供 `**>tryLock()**`（尝试获取锁）、`**>tryLock(long timeout, TimeUnit unit)**`（带超时的尝试获取锁）、`**>lockInterruptibly()**`（可中断的锁获取）等方法，增强对锁行为的细粒度控制 
 
 典型使用
@@ -505,7 +509,7 @@ fullTryAcquireShared 通过 自旋循环 不断尝试获取读锁，直到以下
 
 通过 `compareAndSetState(c, c + SHARED_UNIT)` 尝试原子更新 state。若 CAS 成功，记录当前线程的读锁重入次数（通过 HoldCounter 或 ThreadLocal 管理），并返回成功状态。
 
-3. `**tryReleaseShared**`** 方法**
+3. **`tryReleaseShared**` 方法**
 
 该方法用于释放读锁，流程如下：
 
@@ -513,7 +517,7 @@ fullTryAcquireShared 通过 自旋循环 不断尝试获取读锁，直到以下
 + **CAS 更新状态**：使用原子操作更新 `state`，确保读锁计数的线程安全 。
 + **检查是否完全释放**：若读锁计数减至 0（即所有读锁释放），则唤醒 AQS 队列中等待的写锁线程（若有）。
 + **返回值**：始终返回 `true`，表示共享锁释放完成 。
-4. `**tryReadLock**`** 方法**
+4. **`tryReadLock` 方法**
 
 该方法用于非阻塞地尝试获取读锁（类似 `tryLock()`），流程如下：
 
@@ -529,7 +533,7 @@ fullTryAcquireShared 通过 自旋循环 不断尝试获取读锁，直到以下
 + **重入处理 **：若当前线程已持有写锁，则递增写锁计数（`**>state + 1**`）。
 + **CAS 更新状态 **：尝试通过 `**>compareAndSetState**` 原子更新 `**>state**` 的低 16 位（写锁计数）。若成功，设置当前线程为写锁持有者。
 + **公平性判断 **：在公平模式下，若等待队列中有其他线程等待，则当前线程需进入队列并阻塞。
-6. `**>tryRelease**`** 方法（写锁的释放）**
+6. **`tryRelease**` 方法（写锁的释放）**
 
 该方法用于释放写锁，流程如下：
 
@@ -537,14 +541,14 @@ fullTryAcquireShared 通过 自旋循环 不断尝试获取读锁，直到以下
 + **检查是否完全释放 **：若写锁计数减至 0（即所有重入释放完成），则清空写锁持有者标识。
 + **CAS 更新状态 **：通过原子操作更新 `**>state**`，确保线程安全。
 + **唤醒等待线程 **：若写锁完全释放，调用 `**>unparkSuccessor**` 唤醒 AQS 队列中等待的读锁或写锁线程 。
-7. `**>tryWriteLock**`** 方法（非阻塞尝试获取写锁）**
+7. **`tryWriteLock**` 方法（非阻塞尝试获取写锁）**
 
-该方法用于非阻塞地尝试获取写锁（类似 `**>tryLock()**`），流程如下：
+该方法用于非阻塞地尝试获取写锁（类似 **`tryLock()`**），流程如下：
 
 + **快速检查 **：若当前存在读锁或写锁（且持有者不是当前线程），直接返回失败。
-+ **CAS 尝试获取 **：尝试通过 `**>compareAndSetState**` 原子设置 `**>state**` 的低 16 位为 1（初始写锁计数）。若成功，设置当前线程为写锁持有者。
-+ **失败处理 **：若因竞争或锁占用导致 CAS 失败，立即返回 `**>false**`，不进入等待队列。
-+ **与 **`**>tryAcquire**`** 的对比 **：`**>tryWriteLock**` 是轻量级的单次尝试，而 `**>tryAcquire**` 可能涉及公平性判断和队列阻塞。
++ **CAS 尝试获取 **：尝试通过 `compareAndSetState` 原子设置 `state` 的低 16 位为 1（初始写锁计数）。若成功，设置当前线程为写锁持有者。
++ **失败处理 **：若因竞争或锁占用导致 CAS 失败，立即返回 `false`，不进入等待队列。
++ **与 `tryAcquire**` 的对比 **：`tryWriteLock` 是轻量级的单次尝试，而 `tryAcquire` 可能涉及公平性判断和队列阻塞。
 
 ### StampedLock 的实现****
 使用范例：如何实现一个线程安全的二维点（Point）类，支持并发读写操作，并体现 乐观读 和 锁升级 的典型场景
